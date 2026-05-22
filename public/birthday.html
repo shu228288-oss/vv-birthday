@@ -600,7 +600,7 @@
   #guide-arrow.visible { opacity: 0.8; }
   @keyframes arrow-bounce {
     0%, 100% { transform: translateX(0); }
-    50% { transform: translateX(-8px); }
+    50% { transform: translateX(8px); }
   }
   @keyframes guide-glow {
     0%,100% { box-shadow: 0 4px 20px rgba(232,135,158,0.5),0 0 0 8px rgba(255,180,200,0.18); }
@@ -1135,13 +1135,13 @@
 </div>
 
 <!-- 引导按钮 -->
-<div id="guide-arrow">◄</div>
+<div id="guide-arrow">►</div>
 <div id="guide-btn">💌</div>
 
 <!-- 刮刮乐覆盖层 -->
 <div id="scratch-overlay">
   <button id="scratch-close">✕</button>
-  <button id="skip-to-gacha" style="position:fixed;top:16px;right:70px;z-index:22;padding:6px 14px;border-radius:14px;border:1px dashed #e8879e;background:rgba(255,255,255,0.7);font-family:'M PLUS Rounded 1c',sans-serif;font-size:11px;color:#e8877a;cursor:pointer;">🎁 跳转扭蛋机</button>
+  <button id="skip-to-gacha" style="position:fixed;top:16px;right:70px;z-index:22;padding:6px 14px;border-radius:14px;border:1px dashed #e8879e;background:rgba(255,255,255,0.7);font-family:'M PLUS Rounded 1c',sans-serif;font-size:11px;color:#e8877a;cursor:pointer;">🎁 ⇄ 扭蛋机</button>
   <div id="scratch-title">💝 刮开每一格，发现关于你的 22 件事</div>
   <div id="scratch-progress">已发现 0/22</div>
   <div id="scratch-grid"></div>
@@ -2228,14 +2228,28 @@
     document.body.style.overflow = '';
   });
 
-  // 快捷跳转扭蛋机（测试用，之后删）
+  // 快捷切换 刮刮乐 ⇄ 扭蛋机（测试用，之后删）
+  let gachaActive = false;
   document.getElementById('skip-to-gacha').addEventListener('click', () => {
-    document.getElementById('scratch-grid').style.display = 'none';
-    scratchDone.style.display = 'none';
-    document.getElementById('gacha-machine').classList.add('show');
-    document.getElementById('scratch-title').textContent = '✨ 开始你的许愿吧';
-    scratchProgress.textContent = '已抽出 0/12';
-    initGacha();
+    gachaActive = !gachaActive;
+    if (gachaActive) {
+      document.getElementById('scratch-grid').style.display = 'none';
+      scratchDone.style.display = 'none';
+      document.getElementById('gacha-machine').classList.add('show');
+      document.getElementById('scratch-title').textContent = '✨ 开始你的许愿吧';
+      scratchProgress.textContent = '已抽出 0/12';
+      initGacha();
+    } else {
+      document.getElementById('scratch-grid').style.display = '';
+      scratchDone.style.display = '';
+      document.getElementById('gacha-machine').classList.remove('show');
+      document.getElementById('scratch-title').textContent = '💝 刮开每一格，发现关于你的 22 件事';
+      document.getElementById('gacha-dome').innerHTML = '';
+      document.getElementById('gacha-dispensed').innerHTML = '';
+      document.getElementById('gacha-done-msg').classList.remove('show');
+      gachaI = 0; gachaBalls = [];
+      updateProgress();
+    }
   });
 
   // 音乐加载失败提示
