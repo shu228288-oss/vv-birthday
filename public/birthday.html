@@ -619,8 +619,8 @@
 
   #scratch-grid {
     position: relative;
-    width: 100%; max-width: 420px;
-    height: 400px;
+    width: 100%; max-width: 500px;
+    height: 420px;
     margin: 0 auto;
   }
   .scratch-card {
@@ -679,7 +679,7 @@
   }
 
   @media (max-width:600px) {
-    #scratch-grid { height: 340px; max-width: 340px; }
+    #scratch-grid { height: 360px; max-width: 340px; }
     .scratch-card { width: 56px; height: 56px; }
     .scratch-card .card-text { font-size: 9px; }
     #scratch-title { font-size: 16px; }
@@ -1673,24 +1673,32 @@
   let revealedCount = 0;
 
   // 爱心形状 22 个坐标
-  function heartPositions(count, w, h) {
-    const pts = [];
-    for (let i = 0; i < count; i++) {
-      const t = (i / count) * Math.PI * 2;
-      const x = 16 * Math.pow(Math.sin(t), 3);
-      const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
-      const sx = (x / 18) * w * 0.7 + w / 2;
-      const sy = (y / 20) * h * 0.7 + h * 0.48;
-      pts.push({ x: sx - 36, y: sy - 36 });
-    }
-    return pts;
+  function heartPositions(gridW, gridH) {
+    // 22 个手动排布位置，爱心轮廓，保证卡片不重叠
+    const scaleX = gridW / 500;
+    const scaleY = gridH / 420;
+    const raw = [
+      // 顶部两瓣 (3)
+      {x:165,y:18}, {x:250,y:10}, {x:335,y:18},
+      // 第二排 (5)
+      {x:95,y:70}, {x:172,y:60}, {x:250,y:55}, {x:328,y:60}, {x:405,y:70},
+      // 最宽排 (6)
+      {x:45,y:130}, {x:130,y:125}, {x:210,y:115}, {x:290,y:115}, {x:370,y:125}, {x:455,y:130},
+      // 中间排 (5)
+      {x:95,y:200}, {x:172,y:192}, {x:250,y:188}, {x:328,y:192}, {x:405,y:200},
+      // 下部收窄 (2)
+      {x:172,y:270}, {x:328,y:270},
+      // 底部尖 (1)
+      {x:250,y:350}
+    ];
+    return raw.map(p => ({ x: p.x * scaleX - 36, y: p.y * scaleY - 36 }));
   }
 
   // 创建 22 张刮刮卡
   function buildScratchCards() {
     const gridW = scratchGrid.clientWidth || 420;
     const gridH = scratchGrid.clientHeight || 400;
-    const positions = heartPositions(22, gridW, gridH);
+    const positions = heartPositions(gridW, gridH);
     const cardSize = window.innerWidth <= 600 ? 56 : 72;
     scratchGrid.innerHTML = '';
     revealedCount = 0;
