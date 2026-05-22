@@ -11,6 +11,10 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // 初始化数据文件
+const dataDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
 if (!fs.existsSync(DATA_FILE)) {
   fs.writeFileSync(DATA_FILE, '[]', 'utf-8');
 }
