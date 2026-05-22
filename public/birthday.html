@@ -1674,24 +1674,34 @@
 
   // 爱心形状 22 个坐标
   function heartPositions(gridW, gridH) {
-    // 22 个位置，520×570 参考网格，所有 Y 下移 65px
-    const scaleX = gridW / 520;
-    const scaleY = gridH / 570;
-    const raw = [
-      // 顶部两瓣 (3)
-      {x:135,y:100}, {x:260,y:93}, {x:385,y:100},
-      // 第二排 (5)
-      {x:75,y:170}, {x:170,y:163}, {x:260,y:157}, {x:350,y:163}, {x:445,y:170},
-      // 最宽排 (5)
-      {x:60,y:245}, {x:160,y:240}, {x:260,y:235}, {x:360,y:240}, {x:460,y:245},
-      // 中间排 (5)
-      {x:75,y:320}, {x:170,y:315}, {x:260,y:310}, {x:350,y:315}, {x:445,y:320},
-      // 下部收窄 (3)
-      {x:160,y:400}, {x:260,y:393}, {x:360,y:400},
-      // 底部尖 (1)
-      {x:260,y:485}
-    ];
-    return raw.map(p => ({ x: p.x * scaleX - 36, y: p.y * scaleY - 36 }));
+    // 爱心参数方程
+    function hx(t) { return 16 * Math.pow(Math.sin(t), 3); }
+    function hy(t) { return -(13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t)); }
+    // 密集采样 600 点，计算累积弧长
+    const N = 600, pts = [], dists = [0];
+    for (let i = 0; i <= N; i++) {
+      const t = (i / N) * Math.PI * 2;
+      pts.push({ x: hx(t), y: hy(t) });
+    }
+    for (let i = 1; i < pts.length; i++) {
+      const dx = pts[i].x - pts[i-1].x, dy = pts[i].y - pts[i-1].y;
+      dists.push(dists[i-1] + Math.sqrt(dx*dx + dy*dy));
+    }
+    const total = dists[dists.length - 1];
+    // 等弧长取 22 个点
+    const picked = [];
+    for (let i = 0; i < 22; i++) {
+      const target = (i / 22) * total;
+      let lo = 0, hi = pts.length - 1;
+      while (lo < hi) { const mid = (lo+hi)>>1; dists[mid] < target ? lo=mid+1 : hi=mid; }
+      picked.push(pts[lo]);
+    }
+    // 缩放 + 居中 + 整体下移
+    const sx = (gridW * 0.58) / 18;
+    const sy = (gridH * 0.58) / 20;
+    const cx = gridW / 2;
+    const cy = gridH * 0.54;
+    return picked.map(p => ({ x: p.x * sx + cx - 36, y: p.y * sy + cy - 36 }));
   }
 
   // 创建 22 张刮刮卡
