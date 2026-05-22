@@ -573,10 +573,12 @@
   #p5-transition {
     position: fixed; inset: 0;
     z-index: 15;
-    display: none;
+    display: none; opacity: 1;
     background: #e8e4e0;
+    transition: opacity 0.8s ease;
   }
   #p5-transition.show { display: block; }
+  #p5-transition.fade-out { opacity: 0; pointer-events: none; }
 
   /* ── 引导按钮 ── */
   #guide-btn {
@@ -621,7 +623,13 @@
   #scratch-overlay {
     position: fixed; inset: 0;
     z-index: 20;
-    background: rgba(255,240,245,1);
+    background:
+      radial-gradient(circle at 20% 30%, rgba(255,200,200,0.06) 1px, transparent 1px),
+      radial-gradient(circle at 50% 60%, rgba(255,180,200,0.05) 1px, transparent 1px),
+      radial-gradient(circle at 80% 20%, rgba(255,190,190,0.07) 1px, transparent 1px),
+      radial-gradient(circle at 35% 80%, rgba(255,200,200,0.05) 1px, transparent 1px),
+      radial-gradient(circle at 70% 70%, rgba(255,180,190,0.06) 1px, transparent 1px),
+      linear-gradient(170deg, #fef9f9 0%, #fff5f5 40%, #fdf0f5 100%);
     transform: translateY(100%);
     transition: transform 0.6s cubic-bezier(0.32,0.72,0,1);
     display: flex; flex-direction: column; align-items: center;
@@ -641,6 +649,17 @@
   }
   #scratch-title { font-family:'M PLUS Rounded 1c',sans-serif; font-size:20px; color:#e05a6f; margin:10px 0 6px; letter-spacing:1px; }
   #scratch-progress { font-size:14px; color:#c99595; margin-bottom:16px; letter-spacing:1px; }
+  #scratch-overlay.open #scratch-title {
+    animation: title-rise 0.7s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    opacity: 0; transform: translateY(16px);
+  }
+  #scratch-overlay.open #scratch-progress {
+    animation: title-rise 0.7s 0.15s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    opacity: 0; transform: translateY(12px);
+  }
+  @keyframes title-rise {
+    to { opacity: 1; transform: translateY(0); }
+  }
 
   #scratch-grid {
     position: relative;
@@ -1206,13 +1225,15 @@
 // ═══════════════════════════════════════════
 // p5.js 打字机情书过渡页
 // ═══════════════════════════════════════════
-(function() {
+window._startP5Transition = null;
+
+new p5(function(p) {
   const C = {
     CHAR_W: 14, CHAR_H: 20,
     GROUND_RATIO: 0.78,
     GRAVITY: 0.32,
-    TYPE_MS: 55,
-    DROP_PROB: 0.28,
+    TYPE_MS: 52,
+    DROP_PROB: 0.3,
     SPLASH_N: 8,
     COLORS: ['#c0392b','#e74c3c','#b52830','#d64541','#a93226'],
     SPLASH_COLORS: ['#e74c3c','#f1948a','#e8a090','#d4756b','#c0392b','#ec7063']
@@ -1223,13 +1244,13 @@
 
   let gridChars = [], fallings = [], splashes = [], ripples = [];
   let typeIdx = 0, groundY, startX, startY, cols, doneTyping = false;
-  let transitionCallback = null;
+  let doneCallback = null;
 
   class FallingChar {
     constructor(ch, x, y, col) {
       this.ch = ch; this.x = x; this.y = y;
-      this.vx = random(-1.8, 1.8); this.vy = random(-3, -0.5);
-      this.rot = 0; this.rv = random(-0.08, 0.08);
+      this.vx = p.random(-1.8, 1.8); this.vy = p.random(-3, -0.5);
+      this.rot = 0; this.rv = p.random(-0.08, 0.08);
       this.col = col; this.alive = true;
     }
     update() {
@@ -1237,32 +1258,32 @@
       this.x += this.vx; this.y += this.vy;
       this.rot += this.rv;
       if (this.x < 10) { this.x = 10; this.vx *= -0.55; }
-      if (this.x > width - 10) { this.x = width - 10; this.vx *= -0.55; }
+      if (this.x > p.width - 10) { this.x = p.width - 10; this.vx *= -0.55; }
       if (this.y >= groundY) {
         this.y = groundY;
         for (let i = 0; i < C.SPLASH_N; i++) {
-          splashes.push(new SplashParticle(this.x, groundY, C.SPLASH_COLORS[int(random(C.SPLASH_COLORS.length))]));
+          splashes.push(new SplashParticle(this.x, groundY, C.SPLASH_COLORS[p.int(p.random(C.SPLASH_COLORS.length))]));
         }
         ripples.push(new Ripple(this.x, groundY));
         this.alive = false;
       }
     }
     draw() {
-      push(); translate(this.x, this.y); rotate(this.rot);
-      fill(this.col); noStroke();
-      textAlign(CENTER, CENTER); text(this.ch, 0, 0);
-      pop();
+      p.push(); p.translate(this.x, this.y); p.rotate(this.rot);
+      p.fill(this.col); p.noStroke();
+      p.textAlign(p.CENTER, p.CENTER); p.text(this.ch, 0, 0);
+      p.pop();
     }
   }
 
   class SplashParticle {
     constructor(x, y, col) {
       this.x = x; this.y = y;
-      const a = random(-PI * 0.7, -PI * 0.1);
-      const s = random(1.5, 4.5);
-      this.vx = cos(a) * s * random(0.5, 1.5);
-      this.vy = sin(a) * s;
-      this.col = col; this.size = random(2, 5);
+      const a = p.random(-p.PI * 0.7, -p.PI * 0.1);
+      const s = p.random(1.5, 4.5);
+      this.vx = p.cos(a) * s * p.random(0.5, 1.5);
+      this.vy = p.sin(a) * s;
+      this.col = col; this.size = p.random(2, 5);
       this.alpha = 220; this.alive = true;
     }
     update() {
@@ -1272,8 +1293,9 @@
       if (this.alpha <= 0) this.alive = false;
     }
     draw() {
-      fill(red(color(this.col)), green(color(this.col)), blue(color(this.col)), this.alpha);
-      noStroke(); ellipse(this.x, this.y, this.size, this.size);
+      const c = p.color(this.col);
+      p.fill(p.red(c), p.green(c), p.blue(c), this.alpha);
+      p.noStroke(); p.ellipse(this.x, this.y, this.size, this.size);
     }
   }
 
@@ -1281,115 +1303,145 @@
     constructor(x, y) { this.x = x; this.y = y; this.rx = 2; this.ry = 1; this.alpha = 180; this.alive = true; }
     update() { this.rx += 1.8; this.ry += 0.5; this.alpha -= 5; if (this.alpha <= 0) this.alive = false; }
     draw() {
-      noFill(); stroke(red(color('#c0392b')), green(color('#c0392b')), blue(color('#c0392b')), this.alpha);
-      strokeWeight(1.2); ellipse(this.x, this.y, this.rx * 2, this.ry * 2);
+      const c = p.color('#c0392b');
+      p.noFill(); p.stroke(p.red(c), p.green(c), p.blue(c), this.alpha);
+      p.strokeWeight(1.2); p.ellipse(this.x, this.y, this.rx * 2, this.ry * 2);
     }
   }
 
-  function startTransition(callback) {
-    transitionCallback = callback;
+  function resetState() {
     gridChars = []; fallings = []; splashes = []; ripples = [];
     typeIdx = 0; doneTyping = false;
-    document.getElementById('p5-transition').classList.add('show');
-    loop();
+    groundY = p.height * C.GROUND_RATIO;
+    cols = p.int((p.width - startX * 2) / C.CHAR_W);
   }
 
-  new p5(function(p) {
-    p.setup = function() {
-      const c = p.createCanvas(windowWidth, windowHeight);
-      c.parent('p5-transition');
-      p.textFont('monospace');
-      p.textSize(C.CHAR_H - 2);
-      groundY = height * C.GROUND_RATIO;
-      startX = 30; startY = 50;
-      cols = int((width - startX * 2) / C.CHAR_W);
-      noLoop();
-    };
+  window._startP5Transition = function(cb) {
+    doneCallback = cb;
+    resetState();
+    document.getElementById('p5-transition').classList.add('show');
+    p.loop();
+  };
 
-    p.draw = function() {
-      background(232, 228, 224);
+  p.setup = function() {
+    const c = p.createCanvas(p.windowWidth, p.windowHeight);
+    c.parent('p5-transition');
+    p.textFont('monospace');
+    p.textSize(C.CHAR_H - 2);
+    startX = 30; startY = 50;
+    resetState();
+    p.noLoop();
+  };
 
-      // 打字机
-      if (!doneTyping && frameCount % max(1, int(C.TYPE_MS / (1000/60))) === 0) {
-        if (typeIdx < LETTER.length) {
-          const ch = LETTER[typeIdx];
-          if (ch === '\n') {
-            // advance to next line - already handled below
-          } else if (ch !== ' ') {
-            const row = gridChars.filter(c => c.row === (gridChars.length > 0 ? gridChars[gridChars.length-1].row : 0)).length > 0
-              ? gridChars.filter(c => c.row === (gridChars.length > 0 && LETTER[typeIdx-1] !== '\n' ? gridChars[gridChars.length-1].row : (gridChars.length > 0 ? gridChars[gridChars.length-1].row + 1 : 0))).length > 0
-              ? /* just use current row logic */ 0 : 0;
-            // Simplified: track row/col manually
-          }
-          typeIdx++;
-          if (typeIdx >= LETTER.length) doneTyping = true;
-        }
-      }
+  p.draw = function() {
+    p.background(232, 228, 224);
 
-      // Recalculate grid positions each frame based on typed chars so far
-      let row = 0, col = 0;
-      const newGrid = [];
-      for (let i = 0; i < typeIdx; i++) {
-        const ch = LETTER[i];
-        if (ch === '\n') { row++; col = 0; continue; }
-        if (col >= cols) { row++; col = 0; }
-        const x = startX + col * C.CHAR_W + C.CHAR_W / 2;
-        const y = startY + row * C.CHAR_H + C.CHAR_H / 2;
-        newGrid.push({ ch, x, y, row, col, idx: i });
-        col++;
-      }
+    // 打字机推进
+    if (!doneTyping && p.frameCount % p.max(1, p.int(C.TYPE_MS / (1000/60))) === 0) {
+      typeIdx = p.min(typeIdx + 1, LETTER.length);
+      if (typeIdx >= LETTER.length) doneTyping = true;
+    }
 
-      // Drop some existing chars
-      if (!doneTyping && newGrid.length > 0 && random() < C.DROP_PROB) {
-        const pick = newGrid[int(random(newGrid.length))];
-        if (pick.ch !== ' ' && !fallings.some(f => f.ch === pick.ch && f._gridIdx === pick.idx)) {
-          const f = new FallingChar(pick.ch, pick.x, pick.y, C.COLORS[int(random(C.COLORS.length))]);
+    // 重建网格
+    let row = 0, col = 0;
+    const newGrid = [];
+    for (let i = 0; i < typeIdx; i++) {
+      const ch = LETTER[i];
+      if (ch === '\n') { row++; col = 0; continue; }
+      if (col >= cols) { row++; col = 0; }
+      const x = startX + col * C.CHAR_W + C.CHAR_W / 2;
+      const y = startY + row * C.CHAR_H + C.CHAR_H / 2;
+      newGrid.push({ ch, x, y, row, col, idx: i });
+      col++;
+    }
+
+    // 随机掉落字符
+    if (!doneTyping && newGrid.length > 0 && p.random() < C.DROP_PROB) {
+      const pick = newGrid[p.int(p.random(newGrid.length))];
+      if (pick.ch !== ' ' && pick.ch !== '\n') {
+        const alreadyFell = fallings.some(f => f._gridIdx === pick.idx);
+        if (!alreadyFell) {
+          const f = new FallingChar(pick.ch, pick.x, pick.y, C.COLORS[p.int(p.random(C.COLORS.length))]);
           f._gridIdx = pick.idx;
           fallings.push(f);
         }
       }
+    }
 
-      // Draw grid chars (skip those that fell)
-      const fellIdxs = new Set(fallings.map(f => f._gridIdx));
-      for (const g of newGrid) {
-        if (fellIdxs.has(g.idx)) continue;
-        fill(C.COLORS[0]); noStroke();
-        textAlign(CENTER, CENTER); text(g.ch, g.x, g.y);
+    // 画网格字符（跳过已掉落的）
+    const fellSet = new Set(fallings.map(f => f._gridIdx));
+    for (const g of newGrid) {
+      if (fellSet.has(g.idx)) continue;
+      p.fill(C.COLORS[0]); p.noStroke();
+      p.textAlign(p.CENTER, p.CENTER); p.text(g.ch, g.x, g.y);
+    }
+
+    // 下落字符
+    for (const f of fallings) { f.update(); f.draw(); }
+    fallings = fallings.filter(f => f.alive);
+
+    // 溅射
+    for (const s of splashes) { s.update(); s.draw(); }
+    splashes = splashes.filter(s => s.alive);
+
+    // 涟漪
+    for (const r of ripples) { r.update(); r.draw(); }
+    ripples = ripples.filter(r => r.alive);
+
+    // 右侧飘浮装饰（爱心+小星）
+    const rightX = p.width - 80;
+    for (let i = 0; i < 5; i++) {
+      const fy = (p.height * 0.15 + i * p.height * 0.16 + p.sin(p.frameCount * 0.02 + i) * 20) % p.height;
+      const fa = 30 + p.sin(p.frameCount * 0.03 + i) * 15;
+      p.fill(220, 120, 130, fa);
+      p.noStroke();
+      const hx = rightX + p.sin(p.frameCount * 0.015 + i) * 30;
+      if (i % 2 === 0) {
+        // 爱心
+        p.push(); p.translate(hx, fy); p.scale(0.5);
+        p.beginShape();
+        p.vertex(0, -6); p.bezierVertex(-8, -14, -14, -4, 0, 8);
+        p.bezierVertex(14, -4, 8, -14, 0, -6);
+        p.endShape();
+        p.pop();
+      } else {
+        // 小星
+        p.push(); p.translate(hx, fy);
+        p.beginShape();
+        for (let j = 0; j < 5; j++) {
+          const a = j * p.TWO_PI / 5 - p.PI / 2;
+          const r = j === 0 ? 7 : 3;
+          const sx = p.cos(a) * r, sy = p.sin(a) * r;
+          j === 0 ? p.vertex(sx, sy) : p.vertex(sx, sy);
+          const ma = a + p.TWO_PI / 10;
+          p.vertex(p.cos(ma) * 3, p.sin(ma) * 3);
+        }
+        p.endShape(p.CLOSE);
+        p.pop();
       }
+    }
 
-      // Draw falling
-      for (const f of fallings) { f.update(); f.draw(); }
-      fallings = fallings.filter(f => f.alive);
+    // 地面线
+    p.stroke(180, 170, 165, 40); p.strokeWeight(1);
+    p.line(0, groundY, p.width, groundY);
 
-      // Draw splashes
-      for (const s of splashes) { s.update(); s.draw(); }
-      splashes = splashes.filter(s => s.alive);
+    // 完成
+    if (doneTyping && fallings.length === 0 && splashes.length === 0 && ripples.length === 0) {
+      setTimeout(() => {
+        const el = document.getElementById('p5-transition');
+        el.classList.add('fade-out');
+        if (doneCallback) { const cb = doneCallback; doneCallback = null; cb(); }
+        setTimeout(() => { el.classList.remove('show','fade-out'); p.noLoop(); }, 900);
+      }, 1200);
+    }
+  };
 
-      // Draw ripples
-      for (const r of ripples) { r.update(); r.draw(); }
-      ripples = ripples.filter(r => r.alive);
-
-      // Ground line (faint)
-      stroke(180, 170, 165, 40); strokeWeight(1);
-      line(0, groundY, width, groundY);
-
-      // Done - auto transition
-      if (doneTyping && fallings.length === 0 && splashes.length === 0) {
-        setTimeout(() => {
-          document.getElementById('p5-transition').classList.remove('show');
-          noLoop();
-          if (transitionCallback) transitionCallback();
-        }, 1500);
-      }
-    };
-
-    p.windowResized = function() {
-      p.resizeCanvas(windowWidth, windowHeight);
-      groundY = height * C.GROUND_RATIO;
-      cols = int((width - startX * 2) / C.CHAR_W);
-    };
-  });
-})();
+  p.windowResized = function() {
+    p.resizeCanvas(p.windowWidth, p.windowHeight);
+    groundY = p.height * C.GROUND_RATIO;
+    cols = p.int((p.width - startX * 2) / C.CHAR_W);
+  };
+});
 </script>
 
 <script>
@@ -2423,7 +2475,7 @@
     carousel.classList.remove('visible');
     document.body.style.overflow = 'hidden';
     // 启动 p5 过渡动画，完成后进入刮刮乐
-    startTransition(() => {
+    window._startP5Transition(() => {
       scratchOverlay.classList.add('open');
       buildScratchCards();
     });
