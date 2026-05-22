@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Happy 22nd Birthday VV!</title>
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.1/p5.min.js"></script>
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -567,6 +568,15 @@
     from { transform: translateX(110vw); }
     to { transform: translateX(-110%); }
   }
+
+  /* ── p5.js 打字机过渡页 ── */
+  #p5-transition {
+    position: fixed; inset: 0;
+    z-index: 15;
+    display: none;
+    background: #e8e4e0;
+  }
+  #p5-transition.show { display: block; }
 
   /* ── 引导按钮 ── */
   #guide-btn {
@@ -1134,6 +1144,9 @@
   </div>
 </div>
 
+<!-- p5.js 打字机过渡页 -->
+<div id="p5-transition"></div>
+
 <!-- 引导按钮 -->
 <div id="guide-arrow">►</div>
 <div id="guide-btn">💌</div>
@@ -1188,6 +1201,196 @@
 <audio id="bgm" loop preload="auto" playsinline>
   <source src="./music.mp3" type="audio/mpeg">
 </audio>
+
+<script>
+// ═══════════════════════════════════════════
+// p5.js 打字机情书过渡页
+// ═══════════════════════════════════════════
+(function() {
+  const C = {
+    CHAR_W: 14, CHAR_H: 20,
+    GROUND_RATIO: 0.78,
+    GRAVITY: 0.32,
+    TYPE_MS: 55,
+    DROP_PROB: 0.28,
+    SPLASH_N: 8,
+    COLORS: ['#c0392b','#e74c3c','#b52830','#d64541','#a93226'],
+    SPLASH_COLORS: ['#e74c3c','#f1948a','#e8a090','#d4756b','#c0392b','#ec7063']
+  };
+
+  const LETTER =
+`Every moment without you,\nit feels a little quieter.\nI think about your smile\nmore often than I should.\nWondering if you are looking\nat the same sky,\nfeeling the same breeze,\nthinking of me too.\nYou have become\nmy favorite thought,\nthe one I return to\nagain and again.\nNo matter how far apart,\nyou are always somewhere\nin my heart.\nSo here I am,\nwriting this down,\nhoping these words\nfind their way to you.\nHappy 22nd Birthday, VV.\nYou are deeply loved.`;
+
+  let gridChars = [], fallings = [], splashes = [], ripples = [];
+  let typeIdx = 0, groundY, startX, startY, cols, doneTyping = false;
+  let transitionCallback = null;
+
+  class FallingChar {
+    constructor(ch, x, y, col) {
+      this.ch = ch; this.x = x; this.y = y;
+      this.vx = random(-1.8, 1.8); this.vy = random(-3, -0.5);
+      this.rot = 0; this.rv = random(-0.08, 0.08);
+      this.col = col; this.alive = true;
+    }
+    update() {
+      this.vy += C.GRAVITY;
+      this.x += this.vx; this.y += this.vy;
+      this.rot += this.rv;
+      if (this.x < 10) { this.x = 10; this.vx *= -0.55; }
+      if (this.x > width - 10) { this.x = width - 10; this.vx *= -0.55; }
+      if (this.y >= groundY) {
+        this.y = groundY;
+        for (let i = 0; i < C.SPLASH_N; i++) {
+          splashes.push(new SplashParticle(this.x, groundY, C.SPLASH_COLORS[int(random(C.SPLASH_COLORS.length))]));
+        }
+        ripples.push(new Ripple(this.x, groundY));
+        this.alive = false;
+      }
+    }
+    draw() {
+      push(); translate(this.x, this.y); rotate(this.rot);
+      fill(this.col); noStroke();
+      textAlign(CENTER, CENTER); text(this.ch, 0, 0);
+      pop();
+    }
+  }
+
+  class SplashParticle {
+    constructor(x, y, col) {
+      this.x = x; this.y = y;
+      const a = random(-PI * 0.7, -PI * 0.1);
+      const s = random(1.5, 4.5);
+      this.vx = cos(a) * s * random(0.5, 1.5);
+      this.vy = sin(a) * s;
+      this.col = col; this.size = random(2, 5);
+      this.alpha = 220; this.alive = true;
+    }
+    update() {
+      this.vy += C.GRAVITY * 0.8;
+      this.x += this.vx; this.y += this.vy;
+      this.alpha -= 4; this.size *= 0.985;
+      if (this.alpha <= 0) this.alive = false;
+    }
+    draw() {
+      fill(red(color(this.col)), green(color(this.col)), blue(color(this.col)), this.alpha);
+      noStroke(); ellipse(this.x, this.y, this.size, this.size);
+    }
+  }
+
+  class Ripple {
+    constructor(x, y) { this.x = x; this.y = y; this.rx = 2; this.ry = 1; this.alpha = 180; this.alive = true; }
+    update() { this.rx += 1.8; this.ry += 0.5; this.alpha -= 5; if (this.alpha <= 0) this.alive = false; }
+    draw() {
+      noFill(); stroke(red(color('#c0392b')), green(color('#c0392b')), blue(color('#c0392b')), this.alpha);
+      strokeWeight(1.2); ellipse(this.x, this.y, this.rx * 2, this.ry * 2);
+    }
+  }
+
+  function startTransition(callback) {
+    transitionCallback = callback;
+    gridChars = []; fallings = []; splashes = []; ripples = [];
+    typeIdx = 0; doneTyping = false;
+    document.getElementById('p5-transition').classList.add('show');
+    loop();
+  }
+
+  new p5(function(p) {
+    p.setup = function() {
+      const c = p.createCanvas(windowWidth, windowHeight);
+      c.parent('p5-transition');
+      p.textFont('monospace');
+      p.textSize(C.CHAR_H - 2);
+      groundY = height * C.GROUND_RATIO;
+      startX = 30; startY = 50;
+      cols = int((width - startX * 2) / C.CHAR_W);
+      noLoop();
+    };
+
+    p.draw = function() {
+      background(232, 228, 224);
+
+      // 打字机
+      if (!doneTyping && frameCount % max(1, int(C.TYPE_MS / (1000/60))) === 0) {
+        if (typeIdx < LETTER.length) {
+          const ch = LETTER[typeIdx];
+          if (ch === '\n') {
+            // advance to next line - already handled below
+          } else if (ch !== ' ') {
+            const row = gridChars.filter(c => c.row === (gridChars.length > 0 ? gridChars[gridChars.length-1].row : 0)).length > 0
+              ? gridChars.filter(c => c.row === (gridChars.length > 0 && LETTER[typeIdx-1] !== '\n' ? gridChars[gridChars.length-1].row : (gridChars.length > 0 ? gridChars[gridChars.length-1].row + 1 : 0))).length > 0
+              ? /* just use current row logic */ 0 : 0;
+            // Simplified: track row/col manually
+          }
+          typeIdx++;
+          if (typeIdx >= LETTER.length) doneTyping = true;
+        }
+      }
+
+      // Recalculate grid positions each frame based on typed chars so far
+      let row = 0, col = 0;
+      const newGrid = [];
+      for (let i = 0; i < typeIdx; i++) {
+        const ch = LETTER[i];
+        if (ch === '\n') { row++; col = 0; continue; }
+        if (col >= cols) { row++; col = 0; }
+        const x = startX + col * C.CHAR_W + C.CHAR_W / 2;
+        const y = startY + row * C.CHAR_H + C.CHAR_H / 2;
+        newGrid.push({ ch, x, y, row, col, idx: i });
+        col++;
+      }
+
+      // Drop some existing chars
+      if (!doneTyping && newGrid.length > 0 && random() < C.DROP_PROB) {
+        const pick = newGrid[int(random(newGrid.length))];
+        if (pick.ch !== ' ' && !fallings.some(f => f.ch === pick.ch && f._gridIdx === pick.idx)) {
+          const f = new FallingChar(pick.ch, pick.x, pick.y, C.COLORS[int(random(C.COLORS.length))]);
+          f._gridIdx = pick.idx;
+          fallings.push(f);
+        }
+      }
+
+      // Draw grid chars (skip those that fell)
+      const fellIdxs = new Set(fallings.map(f => f._gridIdx));
+      for (const g of newGrid) {
+        if (fellIdxs.has(g.idx)) continue;
+        fill(C.COLORS[0]); noStroke();
+        textAlign(CENTER, CENTER); text(g.ch, g.x, g.y);
+      }
+
+      // Draw falling
+      for (const f of fallings) { f.update(); f.draw(); }
+      fallings = fallings.filter(f => f.alive);
+
+      // Draw splashes
+      for (const s of splashes) { s.update(); s.draw(); }
+      splashes = splashes.filter(s => s.alive);
+
+      // Draw ripples
+      for (const r of ripples) { r.update(); r.draw(); }
+      ripples = ripples.filter(r => r.alive);
+
+      // Ground line (faint)
+      stroke(180, 170, 165, 40); strokeWeight(1);
+      line(0, groundY, width, groundY);
+
+      // Done - auto transition
+      if (doneTyping && fallings.length === 0 && splashes.length === 0) {
+        setTimeout(() => {
+          document.getElementById('p5-transition').classList.remove('show');
+          noLoop();
+          if (transitionCallback) transitionCallback();
+        }, 1500);
+      }
+    };
+
+    p.windowResized = function() {
+      p.resizeCanvas(windowWidth, windowHeight);
+      groundY = height * C.GROUND_RATIO;
+      cols = int((width - startX * 2) / C.CHAR_W);
+    };
+  });
+})();
+</script>
 
 <script>
 (function() {
@@ -2215,12 +2418,15 @@
     }, 1000);
   };
 
-  // 打开刮刮乐
+  // 打开刮刮乐（先播放 p5.js 过渡页）
   guideBtn.addEventListener('click', () => {
-    scratchOverlay.classList.add('open');
-    document.body.style.overflow = 'hidden';
     carousel.classList.remove('visible');
-    buildScratchCards();
+    document.body.style.overflow = 'hidden';
+    // 启动 p5 过渡动画，完成后进入刮刮乐
+    startTransition(() => {
+      scratchOverlay.classList.add('open');
+      buildScratchCards();
+    });
   });
 
   // 关闭刮刮乐
