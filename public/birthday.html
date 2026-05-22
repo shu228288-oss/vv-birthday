@@ -719,112 +719,136 @@
     100% { transform: scale(1); opacity: 1; }
   }
 
-  /* ── 美乐蒂扭蛋机 ── */
+  /* ── 美乐蒂扭蛋机 V2 ── */
   #gacha-machine {
     display: none;
     flex-direction: column; align-items: center;
-    margin-top: 10px;
+    margin-top: 8px;
   }
   #gacha-machine.show { display: flex; }
-  .gacha-body {
-    position: relative;
-    width: 240px;
-    background: linear-gradient(180deg, #FDC5D0 0%, #F8B5C0 40%, #F09EAC 100%);
-    border-radius: 24px 24px 16px 16px;
-    padding: 0 0 20px 0;
-    box-shadow: 0 8px 32px rgba(200,130,150,0.25), inset 0 2px 8px rgba(255,255,255,0.3);
+  .gacha-top {
     display: flex; flex-direction: column; align-items: center;
+    position: relative; z-index: 2;
+  }
+  .gacha-mymelo-head {
+    width: 54px; height: 44px;
+    background: #FDC5D0;
+    border-radius: 50%;
+    position: relative;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
   }
   .gacha-ears {
-    display: flex; gap: 14px;
-    margin-bottom: -10px; z-index: 1;
+    display: flex; gap: 18px;
+    position: absolute; top: -34px; left: 50%;
+    transform: translateX(-50%);
+    z-index: -1;
   }
   .gacha-ear {
-    width: 28px; height: 50px;
+    width: 20px; height: 50px;
     background: linear-gradient(180deg, #FDC5D0 0%, #F8B5C0 100%);
-    border-radius: 14px 14px 8px 8px;
+    border-radius: 10px 10px 6px 6px;
     position: relative;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
   }
   .gacha-ear::after {
-    content: ''; position: absolute; top: 6px; left: 6px;
-    width: 14px; height: 24px;
-    background: rgba(255,255,255,0.4);
-    border-radius: 8px 8px 4px 4px;
+    content: ''; position: absolute; top: 5px; left: 4px;
+    width: 12px; height: 28px;
+    background: rgba(255,255,255,0.55);
+    border-radius: 6px 6px 3px 3px;
   }
-  .gacha-ear.left { transform: rotate(-8deg); }
-  .gacha-ear.right { transform: rotate(8deg); }
-  .gacha-bow {
-    position: absolute; top: -12px; left: 50%;
+  .gacha-ear.left { transform: rotate(-6deg); }
+  .gacha-ear.right { transform: rotate(6deg); }
+  .gacha-big-bow {
+    position: absolute; top: -18px; left: 50%;
     transform: translateX(-50%);
-    font-size: 22px; z-index: 2;
+    width: 70px; height: 30px;
+    background: #F8B0C0;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    z-index: 3;
+    font-size: 14px; color: #fff;
+    letter-spacing: 1px;
   }
+  .gacha-big-bow::before, .gacha-big-bow::after {
+    content: ''; position: absolute; top: -8px;
+    width: 26px; height: 20px;
+    background: #F8B0C0;
+    border-radius: 50%;
+  }
+  .gacha-big-bow::before { left: -10px; transform: rotate(-20deg); }
+  .gacha-big-bow::after { right: -10px; transform: rotate(20deg); }
+
   .gacha-dome {
-    width: 170px; height: 120px;
-    background: rgba(255,255,255,0.45);
-    border-radius: 85px 85px 0 0;
-    border: 3px solid rgba(255,255,255,0.6);
-    border-bottom: none;
+    width: 210px; height: 210px;
+    background: rgba(255,255,255,0.35);
+    border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.55);
     position: relative;
     overflow: hidden;
-    margin-top: 4px;
+    margin-top: -8px;
+    box-shadow: inset 0 0 30px rgba(255,255,255,0.2);
   }
   .gacha-ball {
     position: absolute;
-    width: 28px; height: 28px;
+    width: 33px; height: 33px;
     border-radius: 50%;
     box-shadow: inset -3px -3px 6px rgba(0,0,0,0.12), inset 3px 3px 6px rgba(255,255,255,0.5);
-    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    cursor: default;
+    transition: none;
+  }
+  .gacha-ball.spinning {
+    animation: balls-spin 1.5s ease-in-out;
+  }
+  @keyframes balls-spin {
+    0% { transform: rotate(0deg) translateX(0); }
+    25% { transform: rotate(90deg) translateX(8px); }
+    50% { transform: rotate(200deg) translateX(-5px); }
+    75% { transform: rotate(300deg) translateX(3px); }
+    100% { transform: rotate(360deg) translateX(0); }
   }
   .gacha-ball.dispensing {
-    animation: ball-drop 1.2s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+    animation: ball-drop 1s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+    z-index: 10;
   }
   @keyframes ball-drop {
-    0% { transform: translateY(0); opacity: 1; }
-    30% { transform: translateY(130px); opacity: 1; }
-    50% { transform: translateY(145px) scale(1,0.7); }
-    60% { transform: translateY(135px) scale(1.1,0.9); }
-    80% { transform: translateY(145px) scale(0.95,1.05); }
-    100% { transform: translateY(155px); opacity: 0; }
+    0% { transform: translateY(0) scale(1); opacity: 1; }
+    30% { transform: translateY(100px) scale(1); opacity: 1; }
+    60% { transform: translateY(210px) scale(1,0.6); }
+    80% { transform: translateY(225px) scale(0.9,0.7); }
+    100% { transform: translateY(240px) scale(0.5,0.5); opacity: 0; }
+  }
+  .gacha-base {
+    width: 180px;
+    background: linear-gradient(180deg, #FDC5D0 0%, #F09EAC 100%);
+    border-radius: 0 0 20px 20px;
+    padding: 14px 0 16px;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 6px;
+    margin-top: -14px;
+    box-shadow: 0 6px 20px rgba(200,130,150,0.2);
+  }
+  .gacha-slot {
+    width: 80px; height: 16px;
+    background: #d89aa8;
+    border-radius: 8px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);
   }
   .gacha-btn {
-    margin-top: 14px;
-    width: 60px; height: 60px;
+    width: 56px; height: 56px;
     border-radius: 50%;
-    background: radial-gradient(circle at 40% 35%, #FFD0D8, #F8A0B5);
+    background: radial-gradient(circle at 40% 35%, #FFD0D8, #F090A8);
     border: none; cursor: pointer;
     font-size: 18px; color: #fff;
-    box-shadow: 0 4px 14px rgba(220,120,150,0.4), 0 0 0 6px rgba(255,180,200,0.2);
-    transition: transform 0.2s ease;
-    letter-spacing: 2px;
+    box-shadow: 0 4px 14px rgba(220,120,150,0.35), 0 0 0 5px rgba(255,180,200,0.18);
+    transition: transform 0.15s ease;
   }
-  .gacha-btn:active { transform: scale(0.9); }
-  .gacha-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .gacha-slot {
-    width: 70px; height: 18px;
-    background: #e8c0ca;
-    border-radius: 0 0 12px 12px;
-    margin-top: 4px;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
-  }
-  .gacha-mymelo {
-    position: absolute; bottom: 8px; right: -18px;
-    width: 36px; height: 30px;
-    background: #FFF;
-    border-radius: 50%;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 10px;
-    flex-direction: column;
-    line-height: 1;
-  }
+  .gacha-btn:active { transform: scale(0.88); }
+  .gacha-btn:disabled { opacity: 0.45; cursor: not-allowed; }
   .gacha-dispensed {
     display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
-    margin-top: 12px; min-height: 28px;
+    margin-top: 10px; min-height: 28px;
   }
   .gacha-dispensed-ball {
-    width: 22px; height: 22px; border-radius: 50%;
+    width: 26px; height: 26px; border-radius: 50%;
     box-shadow: inset -2px -2px 4px rgba(0,0,0,0.1), inset 2px 2px 4px rgba(255,255,255,0.4);
     animation: pop-in 0.4s cubic-bezier(0.34,1.56,0.64,1);
   }
@@ -832,11 +856,10 @@
     0% { transform: scale(0); }
     100% { transform: scale(1); }
   }
-
   #gacha-done-msg {
     display: none;
     font-family:'M PLUS Rounded 1c',sans-serif;
-    font-size: 16px; color: #e8877a; margin-top: 10px; letter-spacing: 1px;
+    font-size: 16px; color: #e8877a; margin-top: 8px; letter-spacing: 1px;
   }
   #gacha-done-msg.show { display: block; }
 
@@ -847,10 +870,13 @@
     #scratch-title { font-size: 16px; }
     .note-popup-card { width: 260px; padding: 18px 14px 14px; }
     .note-popup-msg { font-size: 14px; }
-    .gacha-body { width: 200px; }
-    .gacha-dome { width: 140px; height: 100px; }
-    .gacha-ball { width: 24px; height: 24px; }
-    .gacha-ear { width: 22px; height: 40px; }
+    .gacha-dome { width: 170px; height: 170px; }
+    .gacha-ball { width: 28px; height: 28px; }
+    .gacha-base { width: 150px; }
+    .gacha-ear { width: 16px; height: 40px; }
+    .gacha-mymelo-head { width: 44px; height: 36px; }
+    .gacha-big-bow { width: 56px; height: 24px; font-size: 12px; }
+    .gacha-big-bow::before, .gacha-big-bow::after { width: 22px; height: 16px; }
   }
 
   /* ── 文字容器 ── */
@@ -1106,20 +1132,21 @@
     ✨ 22/22 全都发现啦 ✨
     <br><button id="surprise-btn" style="margin-top:12px;padding:10px 24px;border:none;border-radius:20px;background:linear-gradient(135deg,#ffb5c5,#e8879e);color:#fff;font-family:'M PLUS Rounded 1c',sans-serif;font-size:16px;cursor:pointer;letter-spacing:1px;box-shadow:0 4px 14px rgba(232,135,158,0.4);">🎁 惊喜奖励！</button>
   </div>
-  <!-- 美乐蒂扭蛋机 -->
+  <!-- 美乐蒂扭蛋机 V2 -->
   <div id="gacha-machine">
-    <div class="gacha-body">
-      <div class="gacha-ears">
-        <div class="gacha-ear left"></div>
-        <div class="gacha-bow">🎀</div>
-        <div class="gacha-ear right"></div>
+    <div class="gacha-top">
+      <div class="gacha-mymelo-head">
+        <div class="gacha-ears">
+          <div class="gacha-ear left"></div>
+          <div class="gacha-ear right"></div>
+        </div>
       </div>
-      <div class="gacha-dome" id="gacha-dome"></div>
-      <button class="gacha-btn" id="gacha-btn">✦</button>
+      <div class="gacha-big-bow">🎀</div>
+    </div>
+    <div class="gacha-dome" id="gacha-dome"></div>
+    <div class="gacha-base">
       <div class="gacha-slot"></div>
-      <div class="gacha-mymelo">
-        <span>🐰</span>
-      </div>
+      <button class="gacha-btn" id="gacha-btn">✦</button>
     </div>
     <div class="gacha-dispensed" id="gacha-dispensed"></div>
     <div id="gacha-done-msg">🎉 12 个心愿都交给你啦</div>
@@ -2028,45 +2055,59 @@
     document.getElementById('gacha-dispensed').innerHTML = '';
     document.getElementById('gacha-done-msg').classList.remove('show');
     document.getElementById('gacha-btn').disabled = false;
-    // 12 颗扭蛋排放在球仓
-    const positions = [
-      {x:38,y:22},{x:68,y:18},{x:98,y:25},{x:52,y:48},{x:82,y:42},{x:112,y:50},
-      {x:30,y:58},{x:58,y:65},{x:88,y:62},{x:118,y:58},{x:44,y:80},{x:104,y:80}
-    ];
-    gachaBalls = positions.map((p, i) => {
+    // 标题切换
+    document.getElementById('scratch-title').textContent = '✨ 开始你的许愿吧';
+    scratchProgress.textContent = '已抽出 0/12';
+    // 12 颗扭蛋排放在球仓（响应式尺寸）
+    const domeW = dome.clientWidth || 210;
+    const cx = domeW / 2, cy = domeW / 2, r = domeW * 0.33;
+    gachaBalls = [];
+    for (let i = 0; i < 12; i++) {
+      const angle = (i / 12) * Math.PI * 2 + 0.3;
+      const rad = r * (0.45 + Math.random() * 0.35);
+      const x = cx + Math.cos(angle) * rad - 16;
+      const y = cy + Math.sin(angle) * rad - 16;
       const ball = document.createElement('div');
       ball.className = 'gacha-ball';
-      ball.style.left = p.x + 'px'; ball.style.top = p.y + 'px';
+      ball.style.left = x + 'px'; ball.style.top = y + 'px';
       ball.style.background = `radial-gradient(circle at 35% 30%, ${BALL_COLORS[i]}, ${BALL_COLORS[i]}55)`;
       dome.appendChild(ball);
-      return ball;
-    });
+      gachaBalls.push(ball);
+    }
   }
 
   document.getElementById('gacha-btn').addEventListener('click', () => {
     if (gachaI >= 12) return;
+    const btn = document.getElementById('gacha-btn');
+    btn.disabled = true;
+    // 旋转动画
+    gachaBalls.forEach(b => b.classList.add('spinning'));
     const ball = gachaBalls[gachaI];
-    ball.classList.add('dispensing');
     const wish = GACHA_WISHES[gachaI];
     gachaI++;
-    // 掉落动画结束后移除+展示心愿+加到下方
+    // 旋转1.5秒后掉落
     setTimeout(() => {
-      ball.remove();
-      // 下方已扭出
-      const out = document.createElement('div');
-      out.className = 'gacha-dispensed-ball';
-      out.style.background = BALL_COLORS[gachaI - 1];
-      document.getElementById('gacha-dispensed').appendChild(out);
-      // 弹窗心愿
-      notePopupNum.textContent = '扭蛋 #' + gachaI + ' / 12';
-      notePopupMsg.textContent = wish;
-      notePopupReply.value = '';
-      notePopup.classList.add('show');
-      if (gachaI >= 12) {
-        document.getElementById('gacha-btn').disabled = true;
-        document.getElementById('gacha-done-msg').classList.add('show');
-      }
-    }, 1300);
+      gachaBalls.forEach(b => b.classList.remove('spinning'));
+      ball.classList.add('dispensing');
+      updateProgress();
+      // 掉落结束后移除+展示
+      setTimeout(() => {
+        ball.remove();
+        const out = document.createElement('div');
+        out.className = 'gacha-dispensed-ball';
+        out.style.background = BALL_COLORS[gachaI - 1];
+        document.getElementById('gacha-dispensed').appendChild(out);
+        notePopupNum.textContent = '扭蛋 #' + gachaI + ' / 12';
+        notePopupMsg.textContent = wish;
+        notePopupReply.value = '';
+        notePopup.classList.add('show');
+        if (gachaI >= 12) {
+          document.getElementById('gacha-done-msg').classList.add('show');
+        } else {
+          btn.disabled = false;
+        }
+      }, 1100);
+    }, 1600);
   });
 
   // ── 弹窗便签 ──
@@ -2112,7 +2153,11 @@
   });
 
   function updateProgress() {
-    scratchProgress.textContent = `已发现 ${revealedCount}/22 💝`;
+    if (document.getElementById('gacha-machine').classList.contains('show')) {
+      scratchProgress.textContent = `已抽出 ${gachaI}/12`;
+    } else {
+      scratchProgress.textContent = `已发现 ${revealedCount}/22 💝`;
+    }
   }
 
   function finishAll() {
