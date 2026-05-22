@@ -1,0 +1,1872 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Happy 22nd Birthday VV!</title>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 100vw; height: 100vh;
+    overflow: hidden;
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    cursor: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* ── 背景层 ── */
+  #bg-gradient {
+    position: fixed; inset: 0;
+    background: linear-gradient(135deg, #fff0f5 0%, #f8e8ff 40%, #fff5f0 70%, #ffeef5 100%);
+    z-index: 0;
+  }
+
+  /* ── 星空 Canvas ── */
+  #stars-canvas {
+    position: fixed; inset: 0;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* ── 暗色遮罩 ── */
+  #dark-overlay {
+    position: fixed; inset: 0;
+    background: #08080f;
+    z-index: 2;
+    transition: opacity 2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  #dark-overlay.fade-out { opacity: 0; pointer-events: none; }
+
+  /* ── 特效 Canvas（烟花/粒子/樱花） ── */
+  #fx-canvas {
+    position: fixed; inset: 0;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  /* ── 火焰光标 ── */
+  #flame-cursor {
+    position: fixed;
+    z-index: 100;
+    pointer-events: none;
+    transform: translate(-50%, -70%);
+    filter: drop-shadow(0 0 8px rgba(255,140,0,0.7)) drop-shadow(0 0 18px rgba(255,100,20,0.4));
+    transition: opacity 0.6s ease;
+  }
+  #flame-cursor.fade-out { opacity: 0; pointer-events: none; }
+  .flame-body {
+    width: 18px; height: 28px;
+    background: radial-gradient(ellipse at 50% 35%, #fffbe6 0%, #ffd700 25%, #ff8c00 55%, #ff4500 85%, #cc3300 100%);
+    border-radius: 55% 40% 50% 50% / 65% 55% 30% 40%;
+    animation: flicker 0.25s ease-in-out infinite alternate;
+  }
+  .flame-inner {
+    width: 8px; height: 14px;
+    background: radial-gradient(ellipse at 50% 40%, #fff 0%, #ffe066 60%, transparent 100%);
+    border-radius: 55% 40% 50% 50% / 65% 55% 30% 40%;
+    position: absolute;
+    top: 6px; left: 5px;
+    animation: flicker-inner 0.2s ease-in-out infinite alternate;
+  }
+  @keyframes flicker {
+    0% { transform: scaleX(1) scaleY(1); }
+    100% { transform: scaleX(0.92) scaleY(1.06); }
+  }
+  @keyframes flicker-inner {
+    0% { transform: scale(1); opacity: 0.9; }
+    100% { transform: scale(0.85); opacity: 0.7; }
+  }
+
+  /* ── 蜡烛容器 ── */
+  #candle-wrapper {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -60%);
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: opacity 0.8s ease;
+  }
+  #candle-wrapper.fade-out {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* 烛芯 */
+  #wick {
+    width: 3px; height: 14px;
+    background: #2a1a0a;
+    border-radius: 1px;
+    margin-bottom: -1px;
+    z-index: 1;
+    transition: all 0.5s ease;
+  }
+  #wick.lit {
+    background: #1a0a00;
+    box-shadow: 0 -2px 6px rgba(255,140,0,0.5);
+  }
+
+  /* 烛芯命中区域（透明扩大区域，方便点燃） */
+  #wick-hitbox {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    z-index: 10;
+  }
+
+  /* 蜡烛上的火焰（点燃后显示） */
+  #candle-flame {
+    position: absolute;
+    top: -32px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 16px; height: 24px;
+    background: radial-gradient(ellipse at 50% 35%, #fffbe6 0%, #ffd700 25%, #ff8c00 55%, #ff4500 85%, #cc3300 100%);
+    border-radius: 55% 40% 50% 50% / 65% 55% 30% 40%;
+    box-shadow: 0 0 20px rgba(255,150,30,0.7), 0 0 40px rgba(255,100,20,0.35);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    animation: candle-flame-flicker 0.3s ease-in-out infinite alternate;
+    z-index: 2;
+  }
+  #candle-flame.visible { opacity: 1; }
+  @keyframes candle-flame-flicker {
+    0% { transform: translateX(-50%) scaleX(1) scaleY(1); }
+    100% { transform: translateX(-50%) scaleX(0.9) scaleY(1.08); }
+  }
+
+  /* 蜡烛身体 */
+  #candle-body {
+    width: 44px; height: 100px;
+    background: linear-gradient(90deg, #fffef9 0%, #fffef5 20%, #fff8eb 50%, #fffef5 80%, #fdf5e6 100%);
+    border-radius: 10px 10px 6px 6px;
+    box-shadow:
+      inset 0 0 20px rgba(255,220,150,0.3),
+      0 4px 16px rgba(0,0,0,0.15),
+      0 0 40px rgba(255,200,120,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  /* 蜡烛纹理 */
+  #candle-body::before {
+    content: '';
+    position: absolute;
+    top: 8px; left: 50%;
+    transform: translateX(-50%);
+    width: 18px; height: 84px;
+    background: linear-gradient(180deg,
+      rgba(255,220,160,0.2) 0%, transparent 20%,
+      transparent 80%, rgba(255,220,160,0.15) 100%);
+    border-radius: 50%;
+  }
+  /* 蜡烛点亮后光晕 */
+  #candle-body.glow {
+    box-shadow:
+      inset 0 0 30px rgba(255,200,100,0.4),
+      0 4px 20px rgba(255,150,50,0.3),
+      0 0 60px rgba(255,180,80,0.35),
+      0 0 100px rgba(255,140,40,0.2);
+  }
+
+  /* 颜文字 */
+  #kaomoji {
+    font-size: 11px;
+    color: #8b7355;
+    white-space: pre;
+    text-align: center;
+    line-height: 1.3;
+    transition: all 0.5s ease;
+    position: relative;
+    z-index: 1;
+    letter-spacing: 1px;
+  }
+  #kaomoji.awake {
+    color: #e8875b;
+    text-shadow: 0 0 10px rgba(255,150,100,0.4);
+  }
+
+  /* ── 提示文字 ── */
+  #hint {
+    position: fixed;
+    bottom: 18%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    color: rgba(200,180,160,0.7);
+    font-size: 15px;
+    letter-spacing: 2px;
+    animation: hint-pulse 2s ease-in-out infinite;
+    transition: opacity 0.6s ease;
+  }
+  #hint.hidden { opacity: 0; pointer-events: none; animation: none; }
+  @keyframes hint-pulse {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 0.8; }
+  }
+
+  /* ── 蛋糕容器 ── */
+  #cake-container {
+    position: fixed;
+    top: 68%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    opacity: 0;
+    transition: top 1s ease, left 1s ease, transform 1s ease, opacity 1s ease;
+    pointer-events: none;
+  }
+  #cake-container.visible { opacity: 1; }
+
+  .cake-plate {
+    width: 330px; height: 33px;
+    background: linear-gradient(180deg, #f8f0e8 0%, #e8ddd0 100%);
+    border-radius: 50%;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+    margin-top: 6px;
+  }
+  .cake-layer-bottom {
+    width: 260px; height: 105px;
+    background: linear-gradient(180deg, #ffd4de 0%, #ffbcc9 35%, #f8a5b6 100%);
+    border-radius: 20px 20px 8px 8px;
+    position: relative;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.1), inset 0 3px 12px rgba(255,255,255,0.3);
+  }
+  .cake-layer-bottom::before {
+    content: '';
+    position: absolute;
+    top: -7px; left: -4px; right: -4px;
+    height: 23px;
+    background: linear-gradient(180deg, #fff 0%, #fffef9 60%, #fff5f0 100%);
+    border-radius: 12px 12px 3px 3px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  /* 底部奶油滴落 */
+  .cake-layer-bottom::after {
+    content: '';
+    position: absolute;
+    top: -7px; left: -3px; right: -3px;
+    height: 26px;
+    background:
+      radial-gradient(circle at 20px 9px, #fff 8px, transparent 9px),
+      radial-gradient(circle at 50px 12px, #fff 10px, transparent 11px),
+      radial-gradient(circle at 85px 7px, #fff 8px, transparent 9px),
+      radial-gradient(circle at 118px 13px, #fff 11px, transparent 12px),
+      radial-gradient(circle at 152px 6px, #fff 9px, transparent 10px),
+      radial-gradient(circle at 188px 12px, #fff 10px, transparent 11px),
+      radial-gradient(circle at 222px 8px, #fff 8px, transparent 9px),
+      radial-gradient(circle at 250px 10px, #fff 9px, transparent 10px);
+    background-repeat: no-repeat;
+  }
+
+  .cake-layer-top {
+    width: 195px; height: 78px;
+    background: linear-gradient(180deg, #ffffff 0%, #fffcfc 40%, #fff5f5 100%);
+    border-radius: 16px 16px 6px 6px;
+    position: relative;
+    margin-bottom: 3px;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.08), inset 0 3px 9px rgba(255,255,255,0.5);
+  }
+  .cake-layer-top::before {
+    content: '';
+    position: absolute;
+    top: -6px; left: -3px; right: -3px;
+    height: 19px;
+    background: #fff;
+    border-radius: 10px 10px 3px 3px;
+  }
+  .cake-layer-top::after {
+    content: '';
+    position: absolute;
+    top: -6px; left: -2px; right: -2px;
+    height: 22px;
+    background:
+      radial-gradient(circle at 22px 7px, #fff 8px, transparent 9px),
+      radial-gradient(circle at 58px 10px, #fff 9px, transparent 10px),
+      radial-gradient(circle at 98px 6px, #fff 8px, transparent 9px),
+      radial-gradient(circle at 138px 10px, #fff 9px, transparent 10px),
+      radial-gradient(circle at 175px 7px, #fff 8px, transparent 9px);
+    background-repeat: no-repeat;
+  }
+
+  /* 蛋糕顶部装饰 */
+  .cake-toppings {
+    display: flex;
+    gap: 14px;
+    margin-bottom: -16px;
+    z-index: 3;
+    position: relative;
+    align-items: flex-end;
+  }
+  .strawberry {
+    width: 30px; height: 33px;
+    background: linear-gradient(180deg, #ff6b6b 0%, #e83030 45%, #b81515 100%);
+    border-radius: 50% 50% 35% 35%;
+    position: relative;
+    box-shadow: 0 3px 6px rgba(200,20,20,0.25), inset 0 -3px 6px rgba(0,0,0,0.15);
+  }
+  .strawberry::before {
+    content: '';
+    position: absolute;
+    top: 3px; left: 7px;
+    width: 16px; height: 9px;
+    background:
+      radial-gradient(circle at 3px 3px, #ffe891 1.8px, transparent 2.2px),
+      radial-gradient(circle at 8px 5px, #ffe891 1.5px, transparent 2px),
+      radial-gradient(circle at 13px 2px, #ffe891 1.8px, transparent 2.2px),
+      radial-gradient(circle at 5px 6px, #ffe891 1.2px, transparent 1.6px),
+      radial-gradient(circle at 11px 6px, #ffe891 1.4px, transparent 1.8px);
+    background-repeat: no-repeat;
+  }
+  .strawberry::after {
+    content: '🍃';
+    position: absolute;
+    top: -14px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 16px;
+    line-height: 1;
+  }
+  .strawberry.tall {
+    width: 32px; height: 38px;
+  }
+  .strawberry.tall::before {
+    top: 4px; left: 8px;
+  }
+
+  .cream-dollop {
+    width: 24px; height: 18px;
+    background: radial-gradient(ellipse at 50% 30%, #fff 0%, #fffef9 60%, #fdf5ee 100%);
+    border-radius: 45%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+  }
+
+  /* 22 爱心数字装饰 */
+  .cake-number {
+    font-size: 38px;
+    font-weight: 800;
+    color: #e05a6f;
+    text-shadow: 0 2px 4px rgba(200,30,60,0.3);
+    margin-bottom: -20px;
+    z-index: 3;
+    position: relative;
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    display: flex;
+    gap: 2px;
+  }
+  .cake-number .mirror {
+    display: inline-block;
+    transform: scaleX(-1);
+  }
+
+  /* 糖粒 */
+  .sprinkles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background:
+      radial-gradient(circle at 20px 15px, #FFE066 3px, transparent 3.5px),
+      radial-gradient(circle at 55px 28px, #FF9EB5 2.5px, transparent 3px),
+      radial-gradient(circle at 90px 10px, #A8E6CF 3px, transparent 3.5px),
+      radial-gradient(circle at 130px 22px, #FFD93D 2.5px, transparent 3px),
+      radial-gradient(circle at 160px 14px, #C9B1FF 3px, transparent 3.5px),
+      radial-gradient(circle at 40px 35px, #FFB347 2px, transparent 2.5px),
+      radial-gradient(circle at 110px 32px, #FF6B8A 2.5px, transparent 3px),
+      radial-gradient(circle at 75px 18px, #7EC8E3 2px, transparent 2.5px),
+      radial-gradient(circle at 145px 30px, #FFE066 3px, transparent 3.5px),
+      radial-gradient(circle at 30px 22px, #B8FFD8 2.5px, transparent 3px);
+    background-repeat: no-repeat;
+  }
+
+  /* 奶油夹层 */
+  .cake-cream-filling {
+    width: 200px; height: 14px;
+    background: linear-gradient(180deg, #fff5f5 0%, #fff 40%, #ffe8ec 100%);
+    border-radius: 7px;
+    position: relative;
+    z-index: 1;
+    margin-bottom: -3px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+
+  /* 蕾丝垫 */
+  .cake-doily {
+    width: 380px; height: 40px;
+    border: 3px dashed #f0d5d5;
+    border-radius: 50%;
+    margin-top: 8px;
+    opacity: 0.6;
+  }
+
+  /* ── 照片轮播 ── */
+  #carousel {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 6;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  #carousel.visible { opacity: 1; pointer-events: auto; }
+  .carousel-window {
+    width: 240px; height: 285px;
+    overflow: hidden;
+    border-radius: 4px;
+  }
+  .carousel-track {
+    display: flex;
+    transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  .carousel-slide {
+    min-width: 240px; height: 285px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .polaroid-card {
+    background: #fff;
+    padding: 12px 12px 30px 12px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.06);
+    transform: rotate(0deg);
+    transition: transform 0.3s ease;
+  }
+  .polaroid-card img {
+    display: block;
+    width: 200px; height: 200px;
+    object-fit: cover;
+  }
+  .polaroid-card .caption {
+    display: block;
+    text-align: center;
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-size: 11px;
+    color: #b09595;
+    margin-top: 8px;
+    letter-spacing: 1px;
+  }
+  .carousel-dots {
+    display: flex;
+    gap: 8px;
+  }
+  .carousel-dots .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(200,160,160,0.35);
+    transition: background 0.3s ease;
+  }
+  .carousel-dots .dot.active {
+    background: rgba(224,90,111,0.75);
+  }
+
+  /* ── 蛋糕缩小到左下角 ── */
+  #cake-container.shrunk {
+    top: 88% !important;
+    left: 15% !important;
+    transform: translate(-50%, -50%) scale(0.4) !important;
+    opacity: 0.85;
+  }
+
+  /* ── 小老鼠点击提示 ── */
+  #click-hint {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    pointer-events: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  #click-hint.visible { opacity: 1; pointer-events: auto; }
+  .mouse-kaomoji {
+    font-size: 22px;
+    color: #8b6f6f;
+    white-space: pre;
+    transition: top 0.8s ease, left 0.8s ease;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    letter-spacing: 1px;
+  }
+  .mouse-bubble {
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-size: 13px;
+    color: #c99595;
+    background: rgba(255,255,255,0.75);
+    padding: 3px 10px;
+    border-radius: 12px;
+    letter-spacing: 1px;
+    animation: bubble-pop 1.5s ease-in-out infinite;
+  }
+  @keyframes bubble-pop {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+  }
+
+  /* ── 漂浮气泡 ── */
+  #bubbles-container {
+    position: fixed; inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .bubble {
+    position: absolute;
+    bottom: -80px;
+    padding: 10px 18px;
+    border-radius: 24px;
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-size: 13px;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    animation: float-up 7s ease-in forwards;
+  }
+  @keyframes float-up {
+    0% { transform: translateY(0) translateX(0) scale(0.8); opacity: 0; }
+    10% { opacity: 0.85; transform: translateY(-30px) translateX(0) scale(1); }
+    80% { opacity: 0.6; }
+    100% { transform: translateY(-110vh) translateX(30px) scale(0.9); opacity: 0; }
+  }
+
+  /* ── 弹幕 ── */
+  #danmaku-layer {
+    position: fixed; inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .danmaku {
+    position: absolute;
+    white-space: nowrap;
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    font-weight: 700;
+    letter-spacing: 2px;
+    animation: scroll-left linear forwards;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  }
+  @keyframes scroll-left {
+    from { transform: translateX(110vw); }
+    to { transform: translateX(-110%); }
+  }
+
+  /* ── 引导按钮 ── */
+  #guide-btn {
+    position: fixed;
+    bottom: 28px; right: 28px;
+    z-index: 8;
+    width: 54px; height: 54px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffb5c5, #e8879e);
+    box-shadow: 0 4px 20px rgba(232,135,158,0.5), 0 0 0 8px rgba(255,180,200,0.18);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    opacity: 0;
+    transform: scale(0.6);
+    transition: opacity 0.6s ease, transform 0.5s cubic-bezier(0.34,1.56,0.64,1);
+    pointer-events: none;
+    animation: guide-glow 2s ease-in-out infinite;
+  }
+  #guide-btn.visible { opacity: 1; pointer-events: auto; transform: scale(1); }
+  @keyframes guide-glow {
+    0%,100% { box-shadow: 0 4px 20px rgba(232,135,158,0.5),0 0 0 8px rgba(255,180,200,0.18); }
+    50% { box-shadow: 0 4px 26px rgba(232,135,158,0.7),0 0 0 16px rgba(255,180,200,0.08); }
+  }
+
+  /* ── 刮刮乐覆盖层 ── */
+  #scratch-overlay {
+    position: fixed; inset: 0;
+    z-index: 20;
+    background: rgba(255,240,245,0.97);
+    transform: translateY(100%);
+    transition: transform 0.6s cubic-bezier(0.32,0.72,0,1);
+    display: flex; flex-direction: column; align-items: center;
+    overflow-y: auto;
+    padding: 30px 20px 50px;
+  }
+  #scratch-overlay.open { transform: translateY(0); }
+  #scratch-close {
+    position: fixed; top: 16px; right: 20px;
+    z-index: 22;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.06);
+    border: none; cursor: pointer;
+    font-size: 22px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #scratch-title { font-family:'M PLUS Rounded 1c',sans-serif; font-size:20px; color:#e05a6f; margin:10px 0 6px; letter-spacing:1px; }
+  #scratch-progress { font-size:14px; color:#c99595; margin-bottom:16px; letter-spacing:1px; }
+
+  #scratch-grid {
+    position: relative;
+    width: 100%; max-width: 420px;
+    height: 400px;
+    margin: 0 auto;
+  }
+  .scratch-card {
+    position: absolute;
+    width: 72px; height: 72px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    background: #fff;
+  }
+  .scratch-card .card-text {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family:'M PLUS Rounded 1c',sans-serif;
+    font-size: 11px; color: #5d4037;
+    text-align: center; padding: 6px; line-height: 1.4;
+  }
+  .scratch-card canvas {
+    position: absolute; inset: 0;
+    cursor: pointer;
+    border-radius: 12px;
+  }
+  .scratch-card .note-input {
+    position: absolute; bottom: -32px; left: 0; right: 0;
+    z-index: 1;
+  }
+  .scratch-card .note-input input {
+    width: 100%; padding: 3px 6px;
+    border: 1px dashed #e0c0c0; border-radius: 8px;
+    font-family:'M PLUS Rounded 1c',sans-serif; font-size: 9px;
+    background: rgba(255,255,255,0.8);
+    outline: none;
+  }
+  .scratch-card .sticky-note {
+    position: absolute; bottom: -36px; left: 50%;
+    transform: translateX(-50%) rotate(-2deg);
+    background: #fff9c4;
+    padding: 4px 8px; border-radius: 3px;
+    font-family:'M PLUS Rounded 1c',sans-serif; font-size: 9px;
+    color: #6b5b3e; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    white-space: nowrap; max-width: 90px; overflow: hidden; text-overflow: ellipsis;
+    z-index: 1;
+  }
+
+  #scratch-done {
+    display: none;
+    font-family:'M PLUS Rounded 1c',sans-serif;
+    font-size: 22px; color: #e05a6f;
+    margin-top: 16px; letter-spacing: 2px;
+    animation: done-pop 0.6s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  #scratch-done.show { display: block; }
+  @keyframes done-pop {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  @media (max-width:600px) {
+    #scratch-grid { height: 340px; max-width: 340px; }
+    .scratch-card { width: 56px; height: 56px; }
+    .scratch-card .card-text { font-size: 9px; }
+    #scratch-title { font-size: 16px; }
+  }
+
+  /* ── 文字容器 ── */
+  #text-container {
+    position: fixed;
+    top: 5%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 4;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 1s ease;
+    pointer-events: none;
+  }
+  #text-container.visible { opacity: 1; }
+
+  /* ── 水钻质感（text-shadow 多层发光）── */
+  @keyframes glow-pulse {
+    0%, 100% {
+      text-shadow:
+        0 0 10px rgba(255,210,225,0.8),
+        0 0 22px rgba(220,185,240,0.6),
+        0 0 40px rgba(200,180,230,0.4),
+        0 0 65px rgba(255,185,215,0.25);
+    }
+    50% {
+      text-shadow:
+        0 0 14px rgba(255,220,235,1),
+        0 0 28px rgba(225,195,245,0.8),
+        0 0 50px rgba(205,185,235,0.55),
+        0 0 75px rgba(255,195,225,0.35);
+    }
+  }
+  #dear-vv {
+    font-family: 'Playfair Display', serif;
+    font-size: 30px;
+    font-weight: 600;
+    font-style: italic;
+    letter-spacing: 3px;
+    margin-bottom: 14px;
+    color: #fff;
+    text-shadow:
+      0 0 8px rgba(255,210,225,0.9),
+      0 0 18px rgba(200,180,220,0.6),
+      0 0 35px rgba(255,185,215,0.35);
+  }
+  #birthday-line {
+    font-family: 'Playfair Display', serif;
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    margin-bottom: 20px;
+    color: #fff;
+    text-shadow:
+      0 0 10px rgba(255,210,225,0.8),
+      0 0 22px rgba(220,185,240,0.6),
+      0 0 40px rgba(200,180,230,0.4),
+      0 0 65px rgba(255,185,215,0.25);
+    animation: glow-pulse 3s ease-in-out infinite;
+  }
+  #birthday-line span {
+    display: inline-block;
+    opacity: 0;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    transform: translateY(8px);
+  }
+  #birthday-line span.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .typing-cursor {
+    display: inline-block;
+    width: 3px; height: 44px;
+    background: linear-gradient(180deg, #fff, #ffc8d8, #dfc8ff);
+    margin-left: 4px;
+    vertical-align: text-bottom;
+    animation: cursor-blink 0.7s step-end infinite;
+    border-radius: 1px;
+    box-shadow: 0 0 8px rgba(255,200,220,0.8);
+  }
+  .typing-cursor.done {
+    animation: cursor-blink 0.7s step-end 3;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  @keyframes cursor-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+  #blessing {
+    font-size: 18px;
+    color: #8b6f6f;
+    line-height: 2;
+    letter-spacing: 1px;
+    max-width: 600px;
+    opacity: 0;
+    transition: opacity 1.5s ease;
+  }
+  #blessing.visible { opacity: 1; }
+  #blessing.fade-out {
+    opacity: 0;
+    transition: opacity 1s ease;
+  }
+
+  /* ── 画面震动 ── */
+  .shake {
+    animation: screen-shake 0.5s ease-in-out;
+  }
+  @keyframes screen-shake {
+    0%, 100% { transform: translate(0, 0); }
+    8% { transform: translate(-6px, 3px); }
+    16% { transform: translate(7px, -4px); }
+    24% { transform: translate(-4px, -2px); }
+    32% { transform: translate(5px, 5px); }
+    40% { transform: translate(-8px, 1px); }
+    48% { transform: translate(3px, -3px); }
+    56% { transform: translate(-5px, 4px); }
+    64% { transform: translate(6px, -1px); }
+    72% { transform: translate(-3px, -5px); }
+    80% { transform: translate(4px, 2px); }
+    88% { transform: translate(-2px, 3px); }
+    96% { transform: translate(1px, -2px); }
+  }
+
+  /* ── 响应式微调 ── */
+  @media (max-width: 600px) {
+    #birthday-line { font-size: 32px; letter-spacing: 2px; }
+    #dear-vv { font-size: 24px; letter-spacing: 2px; }
+    #blessing { font-size: 14px; max-width: 300px; }
+    #hint { font-size: 13px; bottom: 15%; }
+    #text-container { top: 4%; }
+    #cake-container { top: 64%; }
+    #click-hint { font-size: 15px; top: 40%; }
+    .cake-number { font-size: 28px; margin-bottom: -14px; }
+    .cake-plate { width: 230px; height: 24px; }
+    .cake-layer-bottom { width: 190px; height: 78px; }
+    .cake-layer-top { width: 140px; height: 56px; }
+    .cake-cream-filling { width: 145px; height: 10px; }
+    .cake-doily { width: 270px; height: 30px; }
+    .cake-toppings { gap: 8px; }
+    .strawberry { width: 22px; height: 24px; }
+    .strawberry.tall { width: 24px; height: 28px; }
+    .cream-dollop { width: 18px; height: 13px; }
+    .typing-cursor { height: 30px; }
+    .carousel-window { width: 185px; height: 225px; }
+    .carousel-slide { min-width: 185px; height: 225px; }
+    .polaroid-card { padding: 8px 8px 22px 8px; }
+    .polaroid-card img { width: 155px; height: 155px; }
+    .polaroid-card .caption { font-size: 9px; margin-top: 5px; }
+    .mouse-kaomoji { font-size: 17px; }
+    .mouse-bubble { font-size: 11px; }
+    .bubble { font-size: 11px; padding: 8px 14px; }
+    .danmaku { font-size: 14px !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 背景渐变 -->
+<div id="bg-gradient"></div>
+
+<!-- 星空 Canvas -->
+<canvas id="stars-canvas"></canvas>
+
+<!-- 暗色遮罩 -->
+<div id="dark-overlay"></div>
+
+<!-- 特效 Canvas -->
+<canvas id="fx-canvas"></canvas>
+
+<!-- 火焰光标 -->
+<div id="flame-cursor">
+  <div class="flame-body"></div>
+  <div class="flame-inner"></div>
+</div>
+
+<!-- 蜡烛 -->
+<div id="candle-wrapper">
+  <div id="wick-hitbox"></div>
+  <div id="candle-flame"></div>
+  <div id="wick"></div>
+  <div id="candle-body">
+    <div id="kaomoji">ᶻz ₍^_   ̫  _^₎</div>
+  </div>
+</div>
+
+<!-- 提示文字 -->
+<div id="hint">拖动火焰点燃蜡烛吧~</div>
+
+<!-- 蛋糕 -->
+<div id="cake-container">
+  <div class="cake-toppings">
+    <div class="strawberry"></div>
+    <div class="cream-dollop"></div>
+    <div class="strawberry tall"></div>
+    <div class="cream-dollop"></div>
+    <div class="strawberry"></div>
+  </div>
+  <div class="cake-number"><span class="mirror">2</span><span>2</span></div>
+  <div class="cake-layer-top">
+    <div class="sprinkles"></div>
+  </div>
+  <div class="cake-cream-filling"></div>
+  <div class="cake-layer-bottom">
+    <div class="sprinkles"></div>
+  </div>
+  <div class="cake-plate"></div>
+  <div class="cake-doily"></div>
+</div>
+
+<!-- 照片轮播 -->
+<div id="carousel">
+  <div class="carousel-window">
+    <div class="carousel-track">
+      <div class="carousel-slide"><div class="polaroid-card"><img src="./photos/photo1.jpg" alt="回忆1"><span class="caption">VV ♡</span></div></div>
+      <div class="carousel-slide"><div class="polaroid-card"><img src="./photos/photo2.jpg" alt="回忆2"><span class="caption">Best Day</span></div></div>
+      <div class="carousel-slide"><div class="polaroid-card"><img src="./photos/photo3.jpg" alt="回忆3"><span class="caption">Forever</span></div></div>
+      <div class="carousel-slide"><div class="polaroid-card"><img src="./photos/photo4.jpg" alt="回忆4"><span class="caption">Us</span></div></div>
+    </div>
+  </div>
+  <div class="carousel-dots">
+    <span class="dot active"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+  </div>
+</div>
+
+<!-- 漂浮气泡 -->
+<div id="bubbles-container"></div>
+
+<!-- 弹幕 -->
+<div id="danmaku-layer"></div>
+
+<!-- 引导按钮 -->
+<div id="guide-btn">💌</div>
+
+<!-- 刮刮乐覆盖层 -->
+<div id="scratch-overlay">
+  <button id="scratch-close">✕</button>
+  <div id="scratch-title">💝 刮开每一格，发现关于你的 22 件事</div>
+  <div id="scratch-progress">已发现 0/22</div>
+  <div id="scratch-grid"></div>
+  <div id="scratch-done">✨ 22/22 全都发现啦 ✨</div>
+</div>
+
+<!-- 小老鼠点击提示 -->
+<div id="click-hint">
+  <span class="mouse-kaomoji">₍˄ ₗ   ̫ ₗ ˄₎◞ ̑̑</span>
+  <span class="mouse-bubble">点点我~</span>
+</div>
+
+<!-- 文字 -->
+<div id="text-container">
+  <div id="dear-vv">Dear VV</div>
+  <div id="birthday-line"></div>
+  <div id="blessing">希望此时此刻的幸福能蔓延在你手心，<br>未来的每一步，你可以走得轻盈。</div>
+</div>
+
+<!-- 音乐：把真正的 .mp3 文件放到同目录下，命名为 music.mp3 -->
+<!-- 注意：网易云下载的 .ncm 加密文件改名后无法播放，需要真正的 MP3 文件 -->
+<audio id="bgm" loop preload="auto" playsinline>
+  <source src="./music.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+(function() {
+  'use strict';
+
+  // ═══════════════════════════════════════
+  // 状态
+  // ═══════════════════════════════════════
+  let isLit = false;
+  let mouseX = -100, mouseY = -100;
+  let animFrameId;
+
+  // ═══════════════════════════════════════
+  // DOM 引用
+  // ═══════════════════════════════════════
+  const flameCursor = document.getElementById('flame-cursor');
+  const darkOverlay = document.getElementById('dark-overlay');
+  const candleWrapper = document.getElementById('candle-wrapper');
+  const candleBody = document.getElementById('candle-body');
+  const candleFlame = document.getElementById('candle-flame');
+  const wick = document.getElementById('wick');
+  const wickHitbox = document.getElementById('wick-hitbox');
+  const kaomoji = document.getElementById('kaomoji');
+  const hint = document.getElementById('hint');
+  const cakeContainer = document.getElementById('cake-container');
+  const textContainer = document.getElementById('text-container');
+  const birthdayLine = document.getElementById('birthday-line');
+  const blessing = document.getElementById('blessing');
+  const bgm = document.getElementById('bgm');
+  const carousel = document.getElementById('carousel');
+  const carouselTrack = document.querySelector('.carousel-track');
+  const carouselSlides = document.querySelectorAll('.carousel-slide');
+  const carouselDots = document.querySelectorAll('.carousel-dots .dot');
+  const clickHint = document.getElementById('click-hint');
+  const mouseKaomoji = document.querySelector('.mouse-kaomoji');
+  const bubblesContainer = document.getElementById('bubbles-container');
+  const danmakuLayer = document.getElementById('danmaku-layer');
+
+  const starsCanvas = document.getElementById('stars-canvas');
+  const starsCtx = starsCanvas.getContext('2d');
+
+  const fxCanvas = document.getElementById('fx-canvas');
+  const fxCtx = fxCanvas.getContext('2d');
+
+  // ═══════════════════════════════════════
+  // Canvas 尺寸
+  // ═══════════════════════════════════════
+  function resizeCanvases() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    starsCanvas.width = w;
+    starsCanvas.height = h;
+    fxCanvas.width = w;
+    fxCanvas.height = h;
+  }
+  resizeCanvases();
+  window.addEventListener('resize', () => {
+    resizeCanvases();
+    initStars();
+  });
+
+  // ═══════════════════════════════════════
+  // 首次鼠标移动 → 预热音频（解锁浏览器 AudioContext）
+  // ═══════════════════════════════════════
+  let audioWarmed = false;
+  function warmAudio() {
+    if (audioWarmed) return;
+    audioWarmed = true;
+    bgm.load();
+    bgm.play().then(() => {
+      bgm.pause();
+      bgm.currentTime = 0;
+      console.log('🔓 音频已解锁，准备就绪');
+    }).catch(e => console.log('⚠️ 音频预热失败:', e.message));
+  }
+  document.addEventListener('mousemove', warmAudio, { once: true });
+  document.addEventListener('touchstart', warmAudio, { once: true });
+
+  // ═══════════════════════════════════════
+  // 鼠标追踪（含碰撞检测）
+  // ═══════════════════════════════════════
+  document.addEventListener('mousemove', function(e) {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+    flameCursor.style.left = mouseX + 'px';
+    flameCursor.style.top = mouseY + 'px';
+  });
+
+  // 触摸支持
+  document.addEventListener('touchmove', function(e) {
+    mouseX = e.touches[0].clientX;
+    mouseY = e.touches[0].clientY;
+    flameCursor.style.left = mouseX + 'px';
+    flameCursor.style.top = mouseY + 'px';
+  }, { passive: true });
+
+  document.addEventListener('touchstart', function(e) {
+    mouseX = e.touches[0].clientX;
+    mouseY = e.touches[0].clientY;
+    flameCursor.style.left = mouseX + 'px';
+    flameCursor.style.top = mouseY + 'px';
+  }, { passive: true });
+
+  // ═══════════════════════════════════════
+  // 碰撞检测
+  // ═══════════════════════════════════════
+  function checkCollision() {
+    const hitbox = wickHitbox.getBoundingClientRect();
+    const hitCenterX = hitbox.left + hitbox.width / 2;
+    const hitCenterY = hitbox.top + hitbox.height / 2;
+    const dist = Math.hypot(mouseX - hitCenterX, mouseY - hitCenterY);
+    return dist < 35;
+  }
+
+  // ═══════════════════════════════════════
+  // 星空背景
+  // ═══════════════════════════════════════
+  let stars = [];
+  function initStars() {
+    stars = [];
+    const count = Math.floor((window.innerWidth * window.innerHeight) / 3000);
+    for (let i = 0; i < count; i++) {
+      stars.push({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        r: Math.random() * 1.5 + 0.3,
+        twinkle: Math.random() * Math.PI * 2,
+        speed: Math.random() * 0.02 + 0.005
+      });
+    }
+  }
+  initStars();
+  window.addEventListener('resize', initStars);
+
+  function drawStars() {
+    const ctx = starsCtx;
+    ctx.clearRect(0, 0, starsCanvas.width, starsCanvas.height);
+    for (const s of stars) {
+      s.twinkle += s.speed;
+      const alpha = 0.15 + Math.sin(s.twinkle) * 0.12;
+      ctx.fillStyle = `rgba(255,255,240,${alpha})`;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // ═══════════════════════════════════════
+  // 烟花系统
+  // ═══════════════════════════════════════
+  const MACARON_COLORS = [
+    {r:255,g:181,b:194},  // 粉
+    {r:212,g:184,b:255},  // 淡紫
+    {r:184,g:216,b:255},  // 浅蓝
+    {r:255,g:245,b:184},  // 鹅黄
+    {r:184,g:255,b:216},  // 薄荷绿
+    {r:255,g:210,b:190},  // 蜜桃
+    {r:255,g:200,b:220},  // 玫瑰粉
+    {r:255,g:223,b:100},  // 金色
+    {r:255,g:240,b:245},  // 亮白粉
+    {r:255,g:80,b:100},   // 暖红
+    {r:255,g:60,b:80},    // 深红
+  ];
+
+  let fireworks = [];
+  let fireworksTimer = 0;
+
+  function spawnFirework() {
+    const w = fxCanvas.width;
+    const h = fxCanvas.height;
+    const color = MACARON_COLORS[Math.floor(Math.random() * MACARON_COLORS.length)];
+    fireworks.push({
+      x: w * 0.15 + Math.random() * w * 0.7,
+      y: h,
+      targetY: h * 0.08 + Math.random() * h * 0.45,
+      vy: -(4 + Math.random() * 5),
+      color: color,
+      exploded: false,
+      particles: [],
+      trail: []
+    });
+  }
+
+  function explodeFirework(fw) {
+    fw.exploded = true;
+    const count = Math.floor(80 + Math.random() * 60);
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 / count) * i + (Math.random() - 0.5) * 0.25;
+      const speed = 1.5 + Math.random() * 5.5;
+      // 小部分粒子是"闪粉"——更小更快更亮
+      const isSparkle = Math.random() < 0.2;
+      fw.particles.push({
+        x: fw.x,
+        y: fw.y,
+        vx: Math.cos(angle) * speed * (isSparkle ? 1.3 : 1),
+        vy: Math.sin(angle) * speed * (isSparkle ? 1.3 : 1),
+        alpha: 1,
+        decay: isSparkle ? 0.012 + Math.random() * 0.02 : (0.004 + Math.random() * 0.01),
+        size: isSparkle ? 1 + Math.random() * 2 : (2 + Math.random() * 3.5),
+        sparkle: isSparkle
+      });
+    }
+  }
+
+  function updateFireworks() {
+    for (const fw of fireworks) {
+      if (!fw.exploded) {
+        fw.y += fw.vy;
+        fw.trail.push({ x: fw.x, y: fw.y, alpha: 1 });
+        if (fw.y <= fw.targetY) {
+          explodeFirework(fw);
+        }
+      } else {
+        for (const p of fw.particles) {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.04; // gravity
+          p.vx *= 0.995;
+          p.alpha -= p.decay;
+        }
+        fw.particles = fw.particles.filter(p => p.alpha > 0);
+      }
+      // trail fade
+      for (const t of fw.trail) {
+        t.alpha -= 0.04;
+      }
+      fw.trail = fw.trail.filter(t => t.alpha > 0);
+    }
+    fireworks = fireworks.filter(fw => {
+      if (fw.exploded && fw.particles.length === 0) return false;
+      if (!fw.exploded && fw.y < -50) return false;
+      return true;
+    });
+  }
+
+  function drawFireworks(ctx) {
+    for (const fw of fireworks) {
+      // trail
+      for (const t of fw.trail) {
+        ctx.fillStyle = `rgba(${fw.color.r},${fw.color.g},${fw.color.b},${t.alpha})`;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, 1.3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      if (!fw.exploded) {
+        // rocket glow
+        ctx.fillStyle = `rgba(${fw.color.r},${fw.color.g},${fw.color.b},1)`;
+        ctx.shadowColor = `rgba(${fw.color.r},${fw.color.g},${fw.color.b},0.8)`;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(fw.x, fw.y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      } else {
+        for (const p of fw.particles) {
+          const rgba = `rgba(${fw.color.r},${fw.color.g},${fw.color.b},${p.alpha})`;
+          ctx.fillStyle = rgba;
+          if (p.sparkle) {
+            // 闪粉带发光
+            ctx.shadowColor = rgba;
+            ctx.shadowBlur = 5;
+          }
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════
+  // 漂浮粒子（星星 & 爱心）
+  // ═══════════════════════════════════════
+  let floatParticles = [];
+  function initFloatParticles() {
+    floatParticles = [];
+    for (let i = 0; i < 20; i++) {
+      spawnFloatParticle(true);
+    }
+  }
+
+  function spawnFloatParticle(randomY) {
+    const w = fxCanvas.width;
+    const h = fxCanvas.height;
+    floatParticles.push({
+      x: Math.random() * w,
+      y: randomY ? Math.random() * h : h + 20,
+      size: 4 + Math.random() * 10,
+      vy: -(0.3 + Math.random() * 0.8),
+      vx: (Math.random() - 0.5) * 0.4,
+      alpha: 0,
+      targetAlpha: 0.3 + Math.random() * 0.4,
+      fadeIn: true,
+      fadeSpeed: 0.005 + Math.random() * 0.01,
+      type: Math.random() < 0.5 ? 'star' : 'heart',
+      hue: Math.random() < 0.33 ? '255,200,220' : (Math.random() < 0.5 ? '255,220,180' : '220,200,255'),
+      wobble: Math.random() * Math.PI * 2,
+      wobbleSpeed: 0.01 + Math.random() * 0.03
+    });
+  }
+
+  function updateFloatParticles() {
+    for (const fp of floatParticles) {
+      fp.wobble += fp.wobbleSpeed;
+      fp.x += fp.vx + Math.sin(fp.wobble) * 0.3;
+      fp.y += fp.vy;
+
+      if (fp.fadeIn) {
+        fp.alpha += fp.fadeSpeed;
+        if (fp.alpha >= fp.targetAlpha) {
+          fp.alpha = fp.targetAlpha;
+          fp.fadeIn = false;
+        }
+      }
+
+      if (fp.y < -30 || fp.x < -30 || fp.x > fxCanvas.width + 30) {
+        fp.y = fxCanvas.height + 20;
+        fp.x = Math.random() * fxCanvas.width;
+        fp.alpha = 0;
+        fp.fadeIn = true;
+        fp.targetAlpha = 0.3 + Math.random() * 0.4;
+        fp.type = Math.random() < 0.5 ? 'star' : 'heart';
+      }
+    }
+  }
+
+  function drawFloatParticles(ctx) {
+    for (const fp of floatParticles) {
+      ctx.fillStyle = `rgba(${fp.hue},${fp.alpha})`;
+      ctx.save();
+      ctx.translate(fp.x, fp.y);
+
+      if (fp.type === 'star') {
+        drawStar(ctx, fp.size);
+      } else {
+        drawHeart(ctx, fp.size);
+      }
+      ctx.restore();
+    }
+  }
+
+  function drawStar(ctx, size) {
+    const outerR = size / 2;
+    const innerR = outerR * 0.4;
+    const spikes = 5;
+    ctx.beginPath();
+    for (let i = 0; i < spikes * 2; i++) {
+      const r = i % 2 === 0 ? outerR : innerR;
+      const angle = (i * Math.PI) / spikes - Math.PI / 2;
+      const x = Math.cos(angle) * r;
+      const y = Math.sin(angle) * r;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawHeart(ctx, size) {
+    const s = size / 2;
+    ctx.beginPath();
+    ctx.moveTo(0, s * 0.25);
+    ctx.bezierCurveTo(0, -s * 0.15, -s, -s * 0.15, -s, s * 0.25);
+    ctx.bezierCurveTo(-s, s * 0.6, 0, s * 0.85, 0, s);
+    ctx.bezierCurveTo(0, s * 0.85, s, s * 0.6, s, s * 0.25);
+    ctx.bezierCurveTo(s, -s * 0.15, 0, -s * 0.15, 0, s * 0.25);
+    ctx.fill();
+  }
+
+  // ═══════════════════════════════════════
+  // 樱花花瓣
+  // ═══════════════════════════════════════
+  let petals = [];
+  function initPetals() {
+    petals = [];
+    for (let i = 0; i < 14; i++) {
+      spawnPetal(true);
+    }
+  }
+
+  function spawnPetal(randomY) {
+    const w = fxCanvas.width;
+    const h = fxCanvas.height;
+    petals.push({
+      x: Math.random() * w,
+      y: randomY ? Math.random() * h : -20,
+      size: 5 + Math.random() * 9,
+      vy: 0.4 + Math.random() * 0.7,
+      vx: (Math.random() - 0.5) * 0.5,
+      rotation: Math.random() * Math.PI * 2,
+      rotSpeed: (Math.random() - 0.5) * 0.03,
+      sway: Math.random() * Math.PI * 2,
+      swaySpeed: 0.01 + Math.random() * 0.02,
+      swayAmp: 0.3 + Math.random() * 0.6,
+      alpha: 0.5 + Math.random() * 0.5,
+      color: Math.random() < 0.5 ? '255,182,193' : '255,160,175'
+    });
+  }
+
+  function updatePetals() {
+    for (const p of petals) {
+      p.sway += p.swaySpeed;
+      p.x += p.vx + Math.sin(p.sway) * p.swayAmp;
+      p.y += p.vy;
+      p.rotation += p.rotSpeed;
+
+      if (p.y > fxCanvas.height + 30 || p.x < -40 || p.x > fxCanvas.width + 40) {
+        p.y = -20;
+        p.x = Math.random() * fxCanvas.width;
+        p.rotation = Math.random() * Math.PI * 2;
+      }
+    }
+  }
+
+  function drawPetals(ctx) {
+    for (const p of petals) {
+      ctx.fillStyle = `rgba(${p.color},${p.alpha})`;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rotation);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, p.size * 0.5, p.size * 0.3, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // small notch at top
+      ctx.fillStyle = `rgba(${p.color},${p.alpha * 0.6})`;
+      ctx.beginPath();
+      ctx.ellipse(p.size * 0.15, -p.size * 0.08, p.size * 0.2, p.size * 0.15, 0.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // ═══════════════════════════════════════
+  // 主循环
+  // ═══════════════════════════════════════
+  function animate() {
+    animFrameId = requestAnimationFrame(animate);
+
+    // 星空（始终绘制，但在暗色遮罩下隐约可见）
+    drawStars();
+
+    // 碰撞检测（未点燃时）
+    if (!isLit && checkCollision()) {
+      lightCandle();
+      return; // 点燃后这帧跳过，下一帧开始绘制烟花
+    }
+
+    // 特效 Canvas（点燃后）
+    if (isLit) {
+      fxCtx.clearRect(0, 0, fxCanvas.width, fxCanvas.height);
+
+      updateFireworks();
+      updateFloatParticles();
+      updatePetals();
+
+      drawFireworks(fxCtx);
+      drawFloatParticles(fxCtx);
+      drawPetals(fxCtx);
+
+      // 定时发射烟花（密集）
+      fireworksTimer++;
+      const interval = 28 + Math.floor(Math.random() * 50);
+      if (fireworksTimer > interval) {
+        fireworksTimer = 0;
+        spawnFirework();
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════
+  // 点燃蜡烛
+  // ═══════════════════════════════════════
+  function lightCandle() {
+    if (isLit) return;
+    isLit = true;
+
+    // 1. 画面震动
+    document.body.classList.add('shake');
+    setTimeout(() => document.body.classList.remove('shake'), 500);
+
+    // 2. 蜡烛表情变化
+    kaomoji.textContent = '₍^‿^₎✨';
+    kaomoji.classList.add('awake');
+
+    // 3. 烛芯点燃样式
+    wick.classList.add('lit');
+
+    // 4. 蜡烛火焰出现
+    candleFlame.classList.add('visible');
+
+    // 5. 蜡烛光晕
+    candleBody.classList.add('glow');
+
+    // 6. 暗色遮罩淡出
+    setTimeout(() => darkOverlay.classList.add('fade-out'), 200);
+
+    // 7. 隐藏提示文字
+    hint.classList.add('hidden');
+
+    // 8. 蛋糕出现
+    setTimeout(() => {
+      cakeContainer.classList.add('visible');
+    }, 600);
+
+    // 9. 蜡烛和火焰光标淡出消失
+    setTimeout(() => {
+      candleWrapper.classList.add('fade-out');
+      flameCursor.classList.add('fade-out');
+    }, 1200);
+
+    // 10. 初始化并启动特效
+    initFloatParticles();
+    initPetals();
+    fireworksTimer = 80; // 马上发射第一波
+    spawnFirework();
+    spawnFirework();
+    spawnFirework();
+    spawnFirework();
+    spawnFirework();
+
+    // 11. 音乐播放
+    bgm.play().catch(e => console.log('🎵 播放失败:', e.message));
+
+    // 12. 文字浮现
+    setTimeout(revealBirthdayText, 1000);
+  }
+
+  // ═══════════════════════════════════════
+  // 文字依次浮现
+  // ═══════════════════════════════════════
+  function revealBirthdayText() {
+    textContainer.classList.add('visible');
+
+    const text = 'Happy 22nd Birthday!';
+    birthdayLine.innerHTML = '';
+
+    for (let i = 0; i < text.length; i++) {
+      const span = document.createElement('span');
+      span.textContent = text[i] === ' ' ? ' ' : text[i];
+      birthdayLine.appendChild(span);
+
+      setTimeout(() => {
+        span.classList.add('revealed');
+      }, i * 150);
+    }
+
+    // 打字光标
+    const totalDelay = text.length * 150;
+    const cursor = document.createElement('span');
+    cursor.className = 'typing-cursor';
+    birthdayLine.appendChild(cursor);
+    setTimeout(() => {
+      cursor.classList.add('done');
+    }, totalDelay + 200);
+
+    // 祝福语淡入
+    setTimeout(() => {
+      blessing.classList.add('visible');
+    }, totalDelay + 800);
+
+    // 文字全部完成后小老鼠出现并开始跑动
+    setTimeout(() => {
+      clickHint.classList.add('visible');
+      startMouseRun();
+    }, totalDelay + 1400);
+  }
+
+  // ═══════════════════════════════════════
+  // 初始化
+  // ═══════════════════════════════════════
+  initStars();
+  animate();
+
+  // 照片加载失败则隐藏该 slide
+  carouselSlides.forEach(s => {
+    const img = s.querySelector('img');
+    img.addEventListener('error', () => { s.style.display = 'none'; });
+  });
+
+  // 小老鼠随机跑动
+  let mouseInterval;
+  function startMouseRun() {
+    mouseInterval = setInterval(() => {
+      const x = 5 + Math.random() * 80;  // 5%-85%
+      const y = 8 + Math.random() * 70;  // 8%-78%
+      clickHint.style.left = x + '%';
+      clickHint.style.top = y + '%';
+    }, 1500);
+  }
+
+  // 轮播引擎
+  let carouselTimer;
+  let currentSlide = 0;
+  function startCarousel() {
+    carousel.classList.add('visible');
+    updateCarousel();
+    carouselTimer = setInterval(() => {
+      currentSlide = (currentSlide + 1) % carouselSlides.length;
+      updateCarousel();
+    }, 2800);
+  }
+
+  function updateCarousel() {
+    carouselTrack.style.transform = `translateX(-${currentSlide * 100}%)`;
+    carouselDots.forEach((d, i) => {
+      d.classList.toggle('active', i === currentSlide);
+    });
+  }
+
+  // 气泡文案
+  const BUBBLE_MSGS = [
+    '陪伴在我身边 🫂',
+    '过去的往事都如烟 🌫️',
+    '你是世界上最可爱的人 💕',
+    '偶尔也可以依赖我 🫶',
+    '和你在一起的每一天都开心 ☀️',
+    '以后都流幸福的眼泪吧 🥹',
+    '谢谢你在世界的角落找到我 🌍',
+    '未来的路我们一起走 ♡'
+  ];
+  const BUBBLE_COLORS = [
+    'rgba(255,220,230,0.75)',
+    'rgba(225,210,245,0.75)',
+    'rgba(200,225,250,0.75)',
+    'rgba(255,240,210,0.75)',
+    'rgba(210,245,225,0.75)'
+  ];
+
+  function spawnBubble() {
+    const b = document.createElement('div');
+    b.className = 'bubble';
+    b.textContent = BUBBLE_MSGS[Math.floor(Math.random() * BUBBLE_MSGS.length)];
+    b.style.left = (5 + Math.random() * 75) + '%';
+    b.style.background = BUBBLE_COLORS[Math.floor(Math.random() * BUBBLE_COLORS.length)];
+    b.style.color = '#6b5b5b';
+    b.style.animationDuration = (6 + Math.random() * 5) + 's';
+    bubblesContainer.appendChild(b);
+    b.addEventListener('animationend', () => b.remove());
+  }
+
+  // 弹幕文案
+  const DANMAKU_MSGS = [
+    'VV 生日快乐！！🎉',
+    '22岁啦！！🎂 一点都不老！',
+    '要开心一点哦 💝',
+    '最帅的VV最帅的生日 ✨',
+    'Happy Birthday VV!! 🎈',
+    '你特别特别棒(｡ì _ í｡)'
+  ];
+  const DANMAKU_COLORS = ['#e8877a','#c9a0dc','#7eb8da','#e8b87a','#a0d8a0','#e8a0c8'];
+
+  function spawnDanmaku() {
+    const d = document.createElement('div');
+    d.className = 'danmaku';
+    d.textContent = DANMAKU_MSGS[Math.floor(Math.random() * DANMAKU_MSGS.length)];
+    d.style.top = (8 + Math.random() * 60) + '%';
+    d.style.color = DANMAKU_COLORS[Math.floor(Math.random() * DANMAKU_COLORS.length)];
+    d.style.fontSize = (16 + Math.random() * 14) + 'px';
+    d.style.animationDuration = (7 + Math.random() * 8) + 's';
+    danmakuLayer.appendChild(d);
+    d.addEventListener('animationend', () => d.remove());
+  }
+
+  let bubbleTimer, danmakuTimer;
+  function startBubbles() {
+    spawnBubble();
+    bubbleTimer = setInterval(spawnBubble, 2000);
+  }
+  function startDanmaku() {
+    spawnDanmaku();
+    danmakuTimer = setInterval(spawnDanmaku, 2000);
+  }
+
+  // 点击小老鼠 → 祝福语淡出 + 蛋糕缩小 + 轮播 + 气泡弹幕
+  clickHint.addEventListener('click', function() {
+    clickHint.classList.remove('visible');
+    clearInterval(mouseInterval);
+    blessing.classList.add('fade-out');
+    cakeContainer.classList.add('shrunk');
+    document.body.style.cursor = 'default';
+    startCarousel();
+    startBubbles();
+    startDanmaku();
+  });
+
+  // 第三层兜底：点燃后任意点击都尝试播放
+  document.addEventListener('click', function() {
+    if (isLit && bgm.paused) {
+      bgm.play().catch(e => console.log('🎵 点击播放失败:', e.message));
+    }
+  });
+
+  // ═══════════════════════════════════════
+  // 刮刮乐系统
+  // ═══════════════════════════════════════
+  const CARD_MSGS = [
+    '第一次见到你，就觉得你有一种特别的吸引力',
+    '你笑起来的样子，能让阴天都变晴天',
+    '那次一起听的歌，我后来循环了好久',
+    '你的声音有种让人安心的魔力',
+    '你专注做一件事的侧脸，很好看',
+    '每次和你聊天，时间总是不够用',
+    '你是我遇到过最有趣的人',
+    '记得你穿那件外套的样子',
+    '你安利的东西我都偷偷去查了',
+    '你有一种让人想靠近的温暖',
+    '你说过的话，我都记在心里',
+    '你让我的世界多了一抹颜色',
+    '我想把所有好玩的都分享给你',
+    '你值得世界上所有的好事',
+    '每次看到好笑的，第一个想发给你',
+    '你不开心的时候，我也想分担',
+    '想做你可以随时打扰的那个人',
+    '和你有关的事，我都格外关注',
+    '你的小习惯小动作，都很可爱',
+    '22岁的你，比任何时候都耀眼',
+    '谢谢你出现在我的世界里',
+    '很高兴认识你，从开始到现在'
+  ];
+
+  const scratchGrid = document.getElementById('scratch-grid');
+  const scratchOverlay = document.getElementById('scratch-overlay');
+  const scratchProgress = document.getElementById('scratch-progress');
+  const scratchDone = document.getElementById('scratch-done');
+  const guideBtn = document.getElementById('guide-btn');
+  let revealedCount = 0;
+
+  // 爱心形状 22 个坐标
+  function heartPositions(count, w, h) {
+    const pts = [];
+    for (let i = 0; i < count; i++) {
+      const t = (i / count) * Math.PI * 2;
+      const x = 16 * Math.pow(Math.sin(t), 3);
+      const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+      const sx = (x / 18) * w * 0.7 + w / 2;
+      const sy = (y / 20) * h * 0.7 + h * 0.48;
+      pts.push({ x: sx - 36, y: sy - 36 });
+    }
+    return pts;
+  }
+
+  // 创建 22 张刮刮卡
+  function buildScratchCards() {
+    const gridW = scratchGrid.clientWidth || 420;
+    const gridH = scratchGrid.clientHeight || 400;
+    const positions = heartPositions(22, gridW, gridH);
+    const cardSize = window.innerWidth <= 600 ? 56 : 72;
+    scratchGrid.innerHTML = '';
+    revealedCount = 0;
+    scratchDone.classList.remove('show');
+    updateProgress();
+
+    positions.forEach((pos, i) => {
+      const card = document.createElement('div');
+      card.className = 'scratch-card';
+      card.style.left = pos.x + 'px';
+      card.style.top = pos.y + 'px';
+      card.dataset.index = i;
+
+      const textDiv = document.createElement('div');
+      textDiv.className = 'card-text';
+      textDiv.textContent = CARD_MSGS[i];
+      card.appendChild(textDiv);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = cardSize; canvas.height = cardSize;
+      canvas.style.width = cardSize + 'px';
+      canvas.style.height = cardSize + 'px';
+      card.appendChild(canvas);
+      scratchGrid.appendChild(card);
+
+      initScratchCanvas(canvas, card);
+    });
+  }
+
+  function initScratchCanvas(canvas, card) {
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+
+    // 银色涂层
+    const grad = ctx.createLinearGradient(0, 0, w, h);
+    grad.addColorStop(0, '#e8e8e8');
+    grad.addColorStop(0.3, '#f5f5f5');
+    grad.addColorStop(0.5, '#dcdcdc');
+    grad.addColorStop(0.7, '#f0f0f0');
+    grad.addColorStop(1, '#c8c8c8');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    // 装饰文字
+    ctx.fillStyle = 'rgba(150,150,150,0.6)';
+    ctx.font = 'bold 14px "M PLUS Rounded 1c",sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('刮开', w/2, h/2 - 8);
+    ctx.fillText('✨', w/2, h/2 + 14);
+
+    let isDrawing = false;
+    let erasedPixels = 0;
+    const totalPixels = w * h;
+
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left,
+        y: (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top
+      };
+    }
+
+    function erase(px, py) {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.arc(px, py, 14, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function checkReveal() {
+      const imageData = ctx.getImageData(0, 0, w, h);
+      let transparent = 0;
+      for (let j = 0; j < imageData.data.length; j += 4) {
+        if (imageData.data[j + 3] === 0) transparent++;
+      }
+      const ratio = transparent / (totalPixels);
+      if (ratio > 0.45) {
+        ctx.clearRect(0, 0, w, h);
+        canvas.style.pointerEvents = 'none';
+        revealedCount++;
+        updateProgress();
+        addNoteInput(card, parseInt(card.dataset.index));
+        if (revealedCount >= 22) finishAll();
+      }
+    }
+
+    canvas.addEventListener('mousedown', e => { isDrawing = true; const p=getPos(e); erase(p.x,p.y); });
+    canvas.addEventListener('mousemove', e => { if(!isDrawing)return; const p=getPos(e); erase(p.x,p.y); });
+    canvas.addEventListener('mouseup', () => { isDrawing = false; checkReveal(); });
+    canvas.addEventListener('mouseleave', () => { isDrawing = false; });
+    canvas.addEventListener('touchstart', e => { e.preventDefault(); isDrawing=true; const p=getPos(e); erase(p.x,p.y); });
+    canvas.addEventListener('touchmove', e => { e.preventDefault(); if(!isDrawing)return; const p=getPos(e); erase(p.x,p.y); });
+    canvas.addEventListener('touchend', () => { isDrawing = false; checkReveal(); });
+  }
+
+  function addNoteInput(card, cardId) {
+    const div = document.createElement('div');
+    div.className = 'note-input';
+    const inp = document.createElement('input');
+    inp.placeholder = '写点什么吧...';
+    inp.maxLength = 20;
+    div.appendChild(inp);
+    card.appendChild(div);
+
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && inp.value.trim()) {
+        const text = inp.value.trim();
+        div.remove();
+        // 提交到服务器
+        fetch('/api/notes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ card_id: cardId, text })
+        }).catch(() => {});
+        // 显示便利贴
+        const sticky = document.createElement('div');
+        sticky.className = 'sticky-note';
+        sticky.textContent = text;
+        card.appendChild(sticky);
+      }
+    });
+  }
+
+  function updateProgress() {
+    scratchProgress.textContent = `已发现 ${revealedCount}/22 💝`;
+  }
+
+  function finishAll() {
+    scratchDone.classList.add('show');
+    // 放一波烟花
+    for (let i = 0; i < 8; i++) spawnFirework();
+  }
+
+  // 页面加载时加载已有便签
+  fetch('/api/notes').then(r => r.json()).then(notes => {
+    notes.forEach(n => {
+      const card = document.querySelector(`.scratch-card[data-index="${n.card_id}"]`);
+      if (card) {
+        const sticky = document.createElement('div');
+        sticky.className = 'sticky-note';
+        sticky.textContent = n.text;
+        card.appendChild(sticky);
+      }
+    });
+  }).catch(() => {});
+
+  // 引导按钮：轮播开始后 1 秒显示
+  const origStartCarousel = startCarousel;
+  startCarousel = function() {
+    origStartCarousel();
+    setTimeout(() => guideBtn.classList.add('visible'), 1000);
+  };
+
+  // 打开刮刮乐
+  guideBtn.addEventListener('click', () => {
+    scratchOverlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    buildScratchCards();
+  });
+
+  // 关闭刮刮乐
+  document.getElementById('scratch-close').addEventListener('click', () => {
+    scratchOverlay.classList.remove('open');
+    document.body.style.overflow = '';
+  });
+
+  // 音乐加载失败提示
+  bgm.addEventListener('error', function() {
+    console.log('❌ music.mp3 加载失败！请确认：\n1. 文件名是 music.mp3（不是 music.mp3.mp3）\n2. 文件放在 birthday.html 同一目录\n3. 文件可以正常用播放器打开');
+  });
+
+  console.log('🕯️  拖动火焰去点燃蜡烛吧~');
+  console.log('💝  Happy 22nd Birthday, VV!');
+
+})();
+</script>
+</body>
+</html>
