@@ -620,7 +620,7 @@
   #scratch-grid {
     position: relative;
     width: 100%; max-width: 520px;
-    height: 520px;
+    height: 570px;
     margin: 0 auto;
   }
   .scratch-card {
@@ -679,7 +679,7 @@
   }
 
   @media (max-width:600px) {
-    #scratch-grid { height: 380px; max-width: 340px; }
+    #scratch-grid { height: 420px; max-width: 340px; }
     .scratch-card { width: 56px; height: 56px; }
     .scratch-card .card-text { font-size: 9px; }
     #scratch-title { font-size: 16px; }
@@ -1674,22 +1674,22 @@
 
   // 爱心形状 22 个坐标
   function heartPositions(gridW, gridH) {
-    // 22 个位置，520×520 参考网格，行距/列距均 ≥ 72px+余量
+    // 22 个位置，520×570 参考网格，所有 Y 下移 65px
     const scaleX = gridW / 520;
-    const scaleY = gridH / 520;
+    const scaleY = gridH / 570;
     const raw = [
       // 顶部两瓣 (3)
-      {x:135,y:35}, {x:260,y:28}, {x:385,y:35},
+      {x:135,y:100}, {x:260,y:93}, {x:385,y:100},
       // 第二排 (5)
-      {x:75,y:105}, {x:170,y:98}, {x:260,y:92}, {x:350,y:98}, {x:445,y:105},
+      {x:75,y:170}, {x:170,y:163}, {x:260,y:157}, {x:350,y:163}, {x:445,y:170},
       // 最宽排 (5)
-      {x:60,y:180}, {x:160,y:175}, {x:260,y:170}, {x:360,y:175}, {x:460,y:180},
+      {x:60,y:245}, {x:160,y:240}, {x:260,y:235}, {x:360,y:240}, {x:460,y:245},
       // 中间排 (5)
-      {x:75,y:255}, {x:170,y:250}, {x:260,y:245}, {x:350,y:250}, {x:445,y:255},
+      {x:75,y:320}, {x:170,y:315}, {x:260,y:310}, {x:350,y:315}, {x:445,y:320},
       // 下部收窄 (3)
-      {x:160,y:335}, {x:260,y:328}, {x:360,y:335},
+      {x:160,y:400}, {x:260,y:393}, {x:360,y:400},
       // 底部尖 (1)
-      {x:260,y:425}
+      {x:260,y:485}
     ];
     return raw.map(p => ({ x: p.x * scaleX - 36, y: p.y * scaleY - 36 }));
   }
