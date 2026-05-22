@@ -619,50 +619,91 @@
 
   #scratch-grid {
     position: relative;
-    width: 100%; max-width: 520px;
+    width: 100%; max-width: 550px;
     height: 570px;
     margin: 0 auto;
   }
   .scratch-card {
     position: absolute;
-    width: 72px; height: 72px;
-    border-radius: 12px;
-    overflow: hidden;
+    width: 85px; height: 85px;
+    border-radius: 14px;
+    overflow: visible;
     box-shadow: 0 2px 10px rgba(0,0,0,0.08);
     background: #fff;
   }
+  .scratch-card.revealed { box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
   .scratch-card .card-text {
     position: absolute; inset: 0;
     display: flex; align-items: center; justify-content: center;
     font-family:'M PLUS Rounded 1c',sans-serif;
-    font-size: 11px; color: #5d4037;
-    text-align: center; padding: 6px; line-height: 1.4;
+    font-size: 10px; color: #5d4037;
+    text-align: center; padding: 4px; line-height: 1.3;
+    pointer-events: none;
   }
   .scratch-card canvas {
     position: absolute; inset: 0;
     cursor: pointer;
-    border-radius: 12px;
+    border-radius: 14px;
   }
-  .scratch-card .note-input {
-    position: absolute; bottom: -32px; left: 0; right: 0;
-    z-index: 1;
+  .scratch-card .replied-dot {
+    position: absolute; top: -4px; right: -4px;
+    width: 16px; height: 16px;
+    background: #ff9eb5; border-radius: 50%;
+    font-size: 10px; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    z-index: 2;
   }
-  .scratch-card .note-input input {
-    width: 100%; padding: 3px 6px;
+
+  /* ── 弹窗便签 ── */
+  #note-popup {
+    position: fixed; inset: 0;
+    z-index: 30;
+    background: rgba(0,0,0,0.3);
+    display: none;
+    align-items: center; justify-content: center;
+  }
+  #note-popup.show { display: flex; }
+  .note-popup-card {
+    background: #fffef5;
+    width: 320px; max-height: 80vh;
+    border-radius: 6px;
+    padding: 24px 20px 18px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.06);
+    position: relative;
+    transform: rotate(1deg);
+    overflow-y: auto;
+  }
+  .note-popup-close {
+    position: absolute; top: 8px; right: 12px;
+    width: 30px; height: 30px;
+    border: none; background: none;
+    font-size: 20px; cursor: pointer;
+    color: #c99595;
+  }
+  .note-popup-num {
+    font-family:'M PLUS Rounded 1c',sans-serif;
+    font-size: 12px; color: #e8877a; margin-bottom: 8px;
+  }
+  .note-popup-msg {
+    font-family:'M PLUS Rounded 1c',sans-serif;
+    font-size: 16px; color: #5d4037;
+    line-height: 1.8; margin-bottom: 16px;
+  }
+  .note-popup-reply {
+    width: 100%; min-height: 60px;
     border: 1px dashed #e0c0c0; border-radius: 8px;
-    font-family:'M PLUS Rounded 1c',sans-serif; font-size: 9px;
-    background: rgba(255,255,255,0.8);
+    padding: 10px; font-family:'M PLUS Rounded 1c',sans-serif;
+    font-size: 13px; resize: vertical;
+    background: rgba(255,255,255,0.6);
     outline: none;
   }
-  .scratch-card .sticky-note {
-    position: absolute; bottom: -36px; left: 50%;
-    transform: translateX(-50%) rotate(-2deg);
-    background: #fff9c4;
-    padding: 4px 8px; border-radius: 3px;
-    font-family:'M PLUS Rounded 1c',sans-serif; font-size: 9px;
-    color: #6b5b3e; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    white-space: nowrap; max-width: 90px; overflow: hidden; text-overflow: ellipsis;
-    z-index: 1;
+  .note-popup-submit {
+    margin-top: 10px; width: 100%;
+    padding: 10px; border: none; border-radius: 8px;
+    background: linear-gradient(135deg, #ffb5c5, #e8879e);
+    color: #fff; font-family:'M PLUS Rounded 1c',sans-serif;
+    font-size: 14px; cursor: pointer;
+    letter-spacing: 1px;
   }
 
   #scratch-done {
@@ -680,9 +721,11 @@
 
   @media (max-width:600px) {
     #scratch-grid { height: 420px; max-width: 340px; }
-    .scratch-card { width: 56px; height: 56px; }
-    .scratch-card .card-text { font-size: 9px; }
+    .scratch-card { width: 64px; height: 64px; }
+    .scratch-card .card-text { font-size: 8px; }
     #scratch-title { font-size: 16px; }
+    .note-popup-card { width: 260px; padding: 18px 14px 14px; }
+    .note-popup-msg { font-size: 14px; }
   }
 
   /* ── 文字容器 ── */
@@ -913,6 +956,17 @@
 
 <!-- 弹幕 -->
 <div id="danmaku-layer"></div>
+
+<!-- 弹窗便签 -->
+<div id="note-popup">
+  <div class="note-popup-card">
+    <button class="note-popup-close">✕</button>
+    <div class="note-popup-num"></div>
+    <div class="note-popup-msg"></div>
+    <textarea class="note-popup-reply" placeholder="写点什么回给我吧..."></textarea>
+    <button class="note-popup-submit">💌 回复</button>
+  </div>
+</div>
 
 <!-- 引导按钮 -->
 <div id="guide-btn">💌</div>
@@ -1641,28 +1695,28 @@
   // 刮刮乐系统
   // ═══════════════════════════════════════
   const CARD_MSGS = [
-    '第一次见到你，就觉得你有一种特别的吸引力',
-    '你笑起来的样子，能让阴天都变晴天',
-    '那次一起听的歌，我后来循环了好久',
-    '你的声音有种让人安心的魔力',
-    '你专注做一件事的侧脸，很好看',
-    '每次和你聊天，时间总是不够用',
-    '你是我遇到过最有趣的人',
-    '记得你穿那件外套的样子',
-    '你安利的东西我都偷偷去查了',
-    '你有一种让人想靠近的温暖',
-    '你说过的话，我都记在心里',
-    '你让我的世界多了一抹颜色',
-    '我想把所有好玩的都分享给你',
-    '你值得世界上所有的好事',
-    '每次看到好笑的，第一个想发给你',
-    '你不开心的时候，我也想分担',
-    '想做你可以随时打扰的那个人',
-    '和你有关的事，我都格外关注',
-    '你的小习惯小动作，都很可爱',
-    '22岁的你，比任何时候都耀眼',
-    '谢谢你出现在我的世界里',
-    '很高兴认识你，从开始到现在'
+    '第一次见到你的时候，你穿了什么颜色的衣服？我还记得。',
+    '你笑起来的样子，真的很好看。你自己知道吗？',
+    '那次我们一起听的歌，后来我单曲循环了好久。你猜是哪首？',
+    '你的声音有一种让人安心的魔力，你自己有感觉吗？',
+    '你专注做一件事的时候，侧脸特别好看。',
+    '每次和你聊天，时间都过得特别快。你有没有也这么觉得？',
+    '你是我遇到过最有趣的人，没有之一。',
+    '有没有一个地方，你一直想去但还没去？告诉我。',
+    '你安利给我的东西，我都偷偷去查了。你最近在追什么？',
+    '你身上有一种让人想靠近的温暖，像冬天的热可可。',
+    '你说过的话，好多我都记在心里。你记得我说过的哪一句？',
+    '认识你之后，我的世界多了一抹颜色。你最喜欢什么颜色？',
+    '每次看到好笑的，第一个就想发给你。你有没有也这样想过我？',
+    '你值得世界上所有好的东西，永远别怀疑这一点。',
+    '你不开心的时候，我也想分担。最近有什么烦心事吗？',
+    '想做你可以随时打扰的那个人。你难过的时候会找谁？',
+    '和你有关的事，我都会格外留意。你有什么特别喜欢的东西？',
+    '你的那些小动作小习惯，在我看来都特别可爱。',
+    '22岁的你，比任何时候都更耀眼。新的一岁想完成什么？',
+    '谢谢你出现在我的世界里。如果用一个词形容我们，你会用什么？',
+    '不管什么时候认识你，我都会觉得是刚刚好。',
+    '很高兴认识你，从开始到现在。以后的每一年，也想和你一起度过。'
   ];
 
   const scratchGrid = document.getElementById('scratch-grid');
@@ -1701,7 +1755,7 @@
     const sy = (gridH * 0.58) / 20;
     const cx = gridW / 2;
     const cy = gridH * 0.54;
-    return picked.map(p => ({ x: p.x * sx + cx - 36, y: p.y * sy + cy - 36 }));
+    return picked.map(p => ({ x: p.x * sx + cx, y: p.y * sy + cy }));
   }
 
   // 创建 22 张刮刮卡
@@ -1709,7 +1763,8 @@
     const gridW = scratchGrid.clientWidth || 420;
     const gridH = scratchGrid.clientHeight || 400;
     const positions = heartPositions(gridW, gridH);
-    const cardSize = window.innerWidth <= 600 ? 56 : 72;
+    const cardSize = window.innerWidth <= 600 ? 64 : 85;
+    const half = cardSize / 2;
     scratchGrid.innerHTML = '';
     revealedCount = 0;
     scratchDone.classList.remove('show');
@@ -1718,13 +1773,14 @@
     positions.forEach((pos, i) => {
       const card = document.createElement('div');
       card.className = 'scratch-card';
-      card.style.left = pos.x + 'px';
-      card.style.top = pos.y + 'px';
+      card.style.left = (pos.x - half + 36) + 'px';
+      card.style.top = (pos.y - half + 36) + 'px';
       card.dataset.index = i;
+      card.addEventListener('click', () => { if (!card.querySelector('canvas')) openNotePopup(i); });
 
       const textDiv = document.createElement('div');
       textDiv.className = 'card-text';
-      textDiv.textContent = CARD_MSGS[i];
+      textDiv.textContent = '#' + (i + 1);
       card.appendChild(textDiv);
 
       const canvas = document.createElement('canvas');
@@ -1734,34 +1790,31 @@
       card.appendChild(canvas);
       scratchGrid.appendChild(card);
 
-      initScratchCanvas(canvas, card);
+      initScratchCanvas(canvas, card, i);
     });
   }
 
-  function initScratchCanvas(canvas, card) {
+  function initScratchCanvas(canvas, card, cardIdx) {
     const ctx = canvas.getContext('2d');
     const w = canvas.width, h = canvas.height;
 
-    // 银色涂层
     const grad = ctx.createLinearGradient(0, 0, w, h);
-    grad.addColorStop(0, '#e8e8e8');
+    grad.addColorStop(0, '#e0e0e0');
     grad.addColorStop(0.3, '#f5f5f5');
-    grad.addColorStop(0.5, '#dcdcdc');
+    grad.addColorStop(0.5, '#d6d6d6');
     grad.addColorStop(0.7, '#f0f0f0');
-    grad.addColorStop(1, '#c8c8c8');
+    grad.addColorStop(1, '#c0c0c0');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
 
-    // 装饰文字
-    ctx.fillStyle = 'rgba(150,150,150,0.6)';
-    ctx.font = 'bold 14px "M PLUS Rounded 1c",sans-serif';
+    ctx.fillStyle = 'rgba(140,140,140,0.5)';
+    ctx.font = `bold ${w*0.18}px "M PLUS Rounded 1c",sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('刮开', w/2, h/2 - 8);
-    ctx.fillText('✨', w/2, h/2 + 14);
+    ctx.fillText('刮开', w/2, h/2 - 6);
+    ctx.fillText('✨', w/2, h/2 + 12);
 
     let isDrawing = false;
-    let erasedPixels = 0;
     const totalPixels = w * h;
 
     function getPos(e) {
@@ -1775,7 +1828,7 @@
     function erase(px, py) {
       ctx.globalCompositeOperation = 'destination-out';
       ctx.beginPath();
-      ctx.arc(px, py, 14, 0, Math.PI * 2);
+      ctx.arc(px, py, 16, 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -1785,13 +1838,13 @@
       for (let j = 0; j < imageData.data.length; j += 4) {
         if (imageData.data[j + 3] === 0) transparent++;
       }
-      const ratio = transparent / (totalPixels);
-      if (ratio > 0.45) {
+      if (transparent / totalPixels > 0.4) {
         ctx.clearRect(0, 0, w, h);
-        canvas.style.pointerEvents = 'none';
+        canvas.remove();
+        card.classList.add('revealed');
         revealedCount++;
         updateProgress();
-        addNoteInput(card, parseInt(card.dataset.index));
+        openNotePopup(cardIdx);
         if (revealedCount >= 22) finishAll();
       }
     }
@@ -1805,33 +1858,47 @@
     canvas.addEventListener('touchend', () => { isDrawing = false; checkReveal(); });
   }
 
-  function addNoteInput(card, cardId) {
-    const div = document.createElement('div');
-    div.className = 'note-input';
-    const inp = document.createElement('input');
-    inp.placeholder = '写点什么吧...';
-    inp.maxLength = 20;
-    div.appendChild(inp);
-    card.appendChild(div);
+  // ── 弹窗便签 ──
+  const notePopup = document.getElementById('note-popup');
+  const notePopupNum = document.querySelector('.note-popup-num');
+  const notePopupMsg = document.querySelector('.note-popup-msg');
+  const notePopupReply = document.querySelector('.note-popup-reply');
+  let currentPopupCard = -1;
 
-    inp.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && inp.value.trim()) {
-        const text = inp.value.trim();
-        div.remove();
-        // 提交到服务器
-        fetch('/api/notes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ card_id: cardId, text })
-        }).catch(() => {});
-        // 显示便利贴
-        const sticky = document.createElement('div');
-        sticky.className = 'sticky-note';
-        sticky.textContent = text;
-        card.appendChild(sticky);
-      }
-    });
+  function openNotePopup(cardIdx) {
+    currentPopupCard = cardIdx;
+    notePopupNum.textContent = '卡片 #' + (cardIdx + 1) + ' / 22';
+    notePopupMsg.textContent = CARD_MSGS[cardIdx];
+    notePopupReply.value = '';
+    notePopup.classList.add('show');
+    notePopupReply.focus();
   }
+
+  document.querySelector('.note-popup-close').addEventListener('click', () => {
+    notePopup.classList.remove('show');
+  });
+  notePopup.addEventListener('click', e => {
+    if (e.target === notePopup) notePopup.classList.remove('show');
+  });
+
+  document.querySelector('.note-popup-submit').addEventListener('click', () => {
+    const text = notePopupReply.value.trim();
+    if (!text) return;
+    fetch('/api/notes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ card_id: currentPopupCard, text })
+    }).catch(() => {});
+    // 卡片上加回复标记
+    const card = document.querySelector(`.scratch-card[data-index="${currentPopupCard}"]`);
+    if (card && !card.querySelector('.replied-dot')) {
+      const dot = document.createElement('div');
+      dot.className = 'replied-dot';
+      dot.textContent = '💌';
+      card.appendChild(dot);
+    }
+    notePopup.classList.remove('show');
+  });
 
   function updateProgress() {
     scratchProgress.textContent = `已发现 ${revealedCount}/22 💝`;
@@ -1843,15 +1910,15 @@
     for (let i = 0; i < 8; i++) spawnFirework();
   }
 
-  // 页面加载时加载已有便签
+  // 页面加载时加载已有便签，显示回复标记
   fetch('/api/notes').then(r => r.json()).then(notes => {
     notes.forEach(n => {
       const card = document.querySelector(`.scratch-card[data-index="${n.card_id}"]`);
-      if (card) {
-        const sticky = document.createElement('div');
-        sticky.className = 'sticky-note';
-        sticky.textContent = n.text;
-        card.appendChild(sticky);
+      if (card && !card.querySelector('.replied-dot')) {
+        const dot = document.createElement('div');
+        dot.className = 'replied-dot';
+        dot.textContent = '💌';
+        card.appendChild(dot);
       }
     });
   }).catch(() => {});
